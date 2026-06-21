@@ -1,5 +1,5 @@
 /* ========================================
-   出数表入力 — 日付×メニュー名（1画面）
+   出数表入力 — 日ごと一覧 + ▽展開
    ======================================== */
 
 const store = { menus: [] };
@@ -27,10 +27,8 @@ const MENU_CATEGORIES = {
 const OTHER_MENU_KEYS = ['health', 'recommend', 'noodle', 'budget'];
 
 let appState = {
-  selectedDate: '',
-  selectedCategory: 'daily',
-  menuOpen: false,
-  searchQuery: ''
+  searchQuery: '',
+  expandedDates: new Set()
 };
 
 async function loadData() {
@@ -67,30 +65,13 @@ function renderEmpty(message = 'なし') {
   return `<p class="empty-note">${message}</p>`;
 }
 
-function toDateInputValue(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function formatDisplayDate(value) {
+function formatShortDate(value) {
   if (!value) return '—';
   const parts = value.split('-');
   if (parts.length === 3) {
-    return `${parts[0]}/${parts[1]}/${parts[2]}`;
+    return `${Number(parts[1])}/${Number(parts[2])}`;
   }
   return value;
-}
-
-function initAppState() {
-  if (!appState.selectedDate) {
-    appState.selectedDate = toDateInputValue(new Date());
-  }
-}
-
-function getMenuForDate(date) {
-  return indexes.menuByDate.get(date) || null;
 }
 
 function getMenuName(menu, category) {
@@ -102,13 +83,26 @@ function matchesQuery(text, query) {
   return !query || (text || '').toLowerCase().includes(query);
 }
 
-function searchMenus(query) {
-  if (!query) return [];
-  return store.menus.flatMap(menu => {
-    return Object.entries(menu.menus || {})
-      .filter(([, name]) => matchesQuery(name, query))
-      .map(([cat, name]) => ({ menu, category: cat, name }));
-  });
+function menuMatchesSearch(menu, query) {
+  if (!query) return true;
+  if (matchesQuery(menu.menuDate, query)) return true;
+  if (matchesQuery(menu.assignee, query)) return true;
+  if (matchesQuery(menu.notes, query)) return true;
+  return Object.values(menu.menus || {}).some(name => matchesQuery(name, query));
+}
+
+function getFilteredMenus() {
+  const query = appState.searchQuery.toLowerCase().trim();
+  return store.menus
+    .filter(menu => menuMatchesSearch(menu, query))
+    .sort((a, b) => b.menuDate.localeCompare(a.menuDate));
+}
+
+function hasExpandableContent(menu) {
+  return OTHER_MENU_KEYS.some(key => isPresent(getMenuName(menu, key))) ||
+    isPresent(menu.notes) ||
+    isPresent(menu.assignee) ||
+    (menu.images?.length > 0);
 }
 
 function renderNoticeBanner() {
@@ -130,65 +124,38 @@ function renderNoticeBanner() {
   `;
 }
 
-function renderSearchResults(query) {
-  const hits = searchMenus(query);
-  if (!hits.length) {
-    return `<div class="home-menu-empty">${renderEmpty('該当するメニューがありません')}</div>`;
-  }
-
-  return `
-    <ul class="home-search-results">
-      ${hits.slice(0, 30).map(hit => `
-        <li class="home-search-item" data-search-date="${escapeAttr(hit.menu.menuDate)}" data-search-category="${hit.category}">
-          <span class="home-search-date">${escapeHtml(formatDisplayDate(hit.menu.menuDate))}</span>
-          <span class="home-search-cat">${escapeHtml(MENU_CATEGORIES[hit.category] || hit.category)}</span>
-          <span class="home-search-name">${escapeHtml(hit.name)}</span>
-        </li>
-      `).join('')}
-    </ul>
-  `;
-}
-
-function renderMenuCard(menu, category) {
-  const label = MENU_CATEGORIES[category] || '日替わり';
-  const name = getMenuName(menu, category);
-
-  if (!menu) {
-    return `
-      <div class="home-menu-card home-menu-card--empty">
-        <p class="home-menu-card-label">${escapeHtml(label)}</p>
-        <p class="home-menu-card-name">${renderEmpty('この日のデータがありません')}</p>
-      </div>
-    `;
-  }
-
-  if (!isPresent(name)) {
-    return `
-      <div class="home-menu-card home-menu-card--empty">
-        <p class="home-menu-card-label">${escapeHtml(label)}</p>
-        <p class="home-menu-card-name">${renderEmpty('メニュー未登録')}</p>
-      </div>
-    `;
-  }
+function renderDayDetails(menu) {
+  const rows = OTHER_MENU_KEYS
+    .map(key => {
+      const name = getMenuName(menu, key);
+      if (!isPresent(name)) return '';
+      return `
+        <div class="day-detail-row">
+          <span class="day-detail-label">${escapeHtml(MENU_CATEGORIES[key])}</span>
+          <span class="day-detail-value">${escapeHtml(name)}</span>
+        </div>
+      `;
+    })
+    .filter(Boolean)
+    .join('');
 
   const assigneeHtml = isPresent(menu.assignee)
-    ? `<p class="home-menu-assignee">入力: ${escapeHtml(menu.assignee)}</p>`
+    ? `<div class="day-detail-row day-detail-row--meta"><span class="day-detail-label">入力者</span><span class="day-detail-value">${escapeHtml(menu.assignee)}</span></div>`
     : '';
 
-  const notesHtml = category === 'daily' && isPresent(menu.notes)
-    ? `<div class="home-menu-notes"><p>${escapeHtml(menu.notes)}</p></div>`
+  const notesHtml = isPresent(menu.notes)
+    ? `<div class="day-detail-notes"><p>${escapeHtml(menu.notes)}</p></div>`
     : '';
 
   const imagesHtml = menu.images?.length
-    ? `<div class="home-menu-images">${menu.images.map((url, i) =>
-        `<a href="${escapeAttr(url)}" class="home-menu-image-link" target="_blank" rel="noopener noreferrer">画像 ${i + 1}</a>`
+    ? `<div class="day-detail-images">${menu.images.map((url, i) =>
+        `<a href="${escapeAttr(url)}" class="day-detail-image-link" target="_blank" rel="noopener noreferrer">画像 ${i + 1}</a>`
       ).join('')}</div>`
     : '';
 
   return `
-    <div class="home-menu-card">
-      <p class="home-menu-card-label">${escapeHtml(label)}</p>
-      <p class="home-menu-card-name">${escapeHtml(name)}</p>
+    <div class="day-row-detail">
+      ${rows || ''}
       ${assigneeHtml}
       ${notesHtml}
       ${imagesHtml}
@@ -196,54 +163,58 @@ function renderMenuCard(menu, category) {
   `;
 }
 
+function renderDayRow(menu) {
+  const expanded = appState.expandedDates.has(menu.menuDate);
+  const dailyName = getMenuName(menu, 'daily');
+  const dailyText = isPresent(dailyName) ? dailyName : '—';
+  const expandable = hasExpandableContent(menu);
+
+  return `
+    <article class="day-row ${expanded ? 'is-expanded' : ''}">
+      <button
+        type="button"
+        class="day-row-head ${expandable ? '' : 'day-row-head--plain'}"
+        data-toggle-day="${escapeAttr(menu.menuDate)}"
+        aria-expanded="${expanded}"
+        ${expandable ? '' : 'disabled'}
+      >
+        <span class="day-row-date">${escapeHtml(formatShortDate(menu.menuDate))}</span>
+        <span class="day-row-daily">日替わり：${escapeHtml(dailyText)}</span>
+        ${expandable ? `<span class="day-row-toggle" aria-hidden="true">${expanded ? '△' : '▽'}</span>` : ''}
+      </button>
+      ${expanded && expandable ? renderDayDetails(menu) : ''}
+    </article>
+  `;
+}
+
+function renderDayList(menus) {
+  if (!menus.length) {
+    return `<div class="day-list-empty">${renderEmpty(appState.searchQuery.trim() ? '該当する日がありません' : 'データがありません')}</div>`;
+  }
+
+  return `
+    <div class="day-list">
+      ${menus.map(menu => renderDayRow(menu)).join('')}
+    </div>
+  `;
+}
+
 function bindControls() {
-  document.getElementById('appDate')?.addEventListener('change', e => {
-    appState.selectedDate = e.target.value;
-    render();
-  });
-
-  document.getElementById('appMenuToggle')?.addEventListener('click', () => {
-    appState.menuOpen = !appState.menuOpen;
-    render();
-  });
-
-  document.getElementById('appDailyReset')?.addEventListener('click', () => {
-    appState.selectedCategory = 'daily';
-    appState.menuOpen = false;
-    render();
-  });
-
-  contentArea.querySelectorAll('[data-app-category]').forEach(btn => {
+  contentArea.querySelectorAll('[data-toggle-day]').forEach(btn => {
     btn.addEventListener('click', () => {
-      appState.selectedCategory = btn.dataset.appCategory;
-      appState.menuOpen = false;
-      render();
+      const date = btn.dataset.toggleDay;
+      if (appState.expandedDates.has(date)) {
+        appState.expandedDates.delete(date);
+      } else {
+        appState.expandedDates.add(date);
+      }
+      render({ preserveScroll: true });
     });
   });
 
   document.getElementById('appSearch')?.addEventListener('input', e => {
     appState.searchQuery = e.target.value;
-    const panel = document.getElementById('appSearchResults');
-    if (panel) {
-      panel.innerHTML = appState.searchQuery.trim()
-        ? renderSearchResults(appState.searchQuery.toLowerCase().trim())
-        : '';
-      bindSearchResults();
-    }
-  });
-
-  bindSearchResults();
-}
-
-function bindSearchResults() {
-  contentArea.querySelectorAll('[data-search-date]').forEach(el => {
-    el.addEventListener('click', () => {
-      appState.selectedDate = el.dataset.searchDate;
-      appState.selectedCategory = el.dataset.searchCategory || 'daily';
-      appState.searchQuery = '';
-      appState.menuOpen = false;
-      render();
-    });
+    render({ preserveScroll: true });
   });
 }
 
@@ -258,15 +229,12 @@ function renderLoadingScreen() {
   `;
 }
 
-function render() {
-  initAppState();
+function render(options = {}) {
+  const scrollY = options.preserveScroll ? window.scrollY : 0;
 
   const formUrl = (window.AppLinks || {}).orderForm || '#';
   const formReady = formUrl && formUrl !== '#';
-  const categoryLabel = MENU_CATEGORIES[appState.selectedCategory] || '日替わり';
-  const menu = getMenuForDate(appState.selectedDate);
-  const hasSearch = appState.searchQuery.trim().length > 0;
-  const query = appState.searchQuery.toLowerCase().trim();
+  const menus = getFilteredMenus();
 
   const formButton = formReady
     ? `<a href="${escapeAttr(formUrl)}" class="home-input-btn" target="_blank" rel="noopener noreferrer">入力</a>`
@@ -279,55 +247,27 @@ function render() {
       <header class="app-header">
         <div class="home-banner">
           <h1 class="home-banner-title">${escapeHtml(SITE_BANNER)}</h1>
-          <img src="images/shokudo-logo.svg" alt="" class="home-banner-logo" width="56" height="56" decoding="async">
+          <img src="images/shokudo-logo.svg" alt="" class="home-banner-logo" width="48" height="48" decoding="async">
         </div>
         <div class="home-search-row">
           <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
-          <input type="search" id="appSearch" class="home-search-input" placeholder="メニューを検索..." value="${escapeAttr(appState.searchQuery)}" aria-label="メニュー検索">
+          <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." value="${escapeAttr(appState.searchQuery)}" aria-label="検索">
         </div>
         ${formButton}
       </header>
 
-      <section class="home-controls">
-        <div class="home-date-row">
-          <label class="home-field-label" for="appDate">日付</label>
-          <input type="date" id="appDate" class="home-date-input" value="${escapeAttr(appState.selectedDate)}">
-        </div>
-
-        <div class="home-menu-row">
-          <span class="home-field-label">メニュー</span>
-          <button type="button" id="appMenuToggle" class="home-menu-toggle" aria-expanded="${appState.menuOpen}">
-            <span class="home-menu-toggle-label">${escapeHtml(categoryLabel)}</span>
-            <span class="home-menu-caret" aria-hidden="true">▼</span>
-          </button>
-          ${appState.selectedCategory !== 'daily' ? `
-            <button type="button" id="appDailyReset" class="home-daily-reset">日替わりに戻す</button>
-          ` : ''}
-        </div>
-
-        ${appState.menuOpen ? `
-          <div class="home-category-list">
-            ${OTHER_MENU_KEYS.map(key => `
-              <button type="button" class="home-category-btn ${appState.selectedCategory === key ? 'is-active' : ''}" data-app-category="${key}">
-                ${escapeHtml(MENU_CATEGORIES[key])}
-              </button>
-            `).join('')}
-          </div>
-        ` : ''}
-
-        <div id="appSearchResults" class="home-search-results-wrap">
-          ${hasSearch ? renderSearchResults(query) : ''}
-        </div>
-
-        ${hasSearch ? '' : renderMenuCard(menu, appState.selectedCategory)}
-      </section>
+      ${renderDayList(menus)}
     </div>
   `;
 
-  document.title = `${formatDisplayDate(appState.selectedDate)} — ${SITE_NAME}`;
+  document.title = SITE_NAME;
   bindControls();
+
+  if (options.preserveScroll) {
+    window.scrollTo(0, scrollY);
+  }
 }
 
 function renderFatalError(err) {

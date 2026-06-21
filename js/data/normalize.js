@@ -2,55 +2,52 @@
  * JSON をサイト共通モデルへ正規化
  */
 window.OutputNormalize = (function () {
-  const CATEGORY_MAP = {
-    '日替わり': 'daily',
-    '日替わりメニュー': 'daily',
-    daily: 'daily',
-    '健康': 'health',
-    health: 'health',
-    'おすすめ': 'recommend',
-    recommend: 'recommend',
-    '麺ランチ': 'noodle',
-    noodle: 'noodle',
-    'おてごろ': 'budget',
-    budget: 'budget'
-  };
+  const MENU_KEYS = ['daily', 'health', 'recommend', 'noodle', 'budget'];
 
-  const STATUS_MAP = {
-    '未着手': 'pending',
-    '製作中': 'in_progress',
-    '進行中': 'in_progress',
-    '完了': 'done',
-    'キャンセル': 'cancelled',
-    pending: 'pending',
-    in_progress: 'in_progress',
-    done: 'done',
-    cancelled: 'cancelled'
-  };
-
-  function toNumber(value) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
+  function formatMenuDate(value) {
+    if (!value) return '';
+    if (value instanceof Date) {
+      const y = value.getFullYear();
+      const m = String(value.getMonth() + 1).padStart(2, '0');
+      const d = String(value.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    const text = String(value).trim();
+    const m = text.match(/(\d{4})[\/\-年.](\d{1,2})[\/\-月.](\d{1,2})/);
+    if (m) {
+      return `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
+    }
+    return text;
   }
 
-  function normalizeOrder(raw) {
+  function normalizeImages(item) {
+    if (Array.isArray(item.images)) {
+      return item.images.map(String).filter(Boolean);
+    }
+    const images = [];
+    ['image1', 'image2', 'image3', 'image_1', 'image_2', 'image_3'].forEach(key => {
+      if (item[key]) images.push(String(item[key]));
+    });
+    return images;
+  }
+
+  function normalizeMenu(raw) {
     const item = raw || {};
+    const menuDate = formatMenuDate(item.menuDate || item.menu_date || item.date || item.日付);
+    const menus = {
+      daily: String(item.daily || item.dailyMenu || item.日替わり || ''),
+      health: String(item.health || item.healthMenu || item.健康 || ''),
+      recommend: String(item.recommend || item.recommendMenu || item.おすすめ || ''),
+      noodle: String(item.noodle || item.noodleMenu || item.麺ランチ || item.麵ランチ || ''),
+      budget: String(item.budget || item.budgetMenu || item.おてごろ || item.お手頃 || '')
+    };
+
     return {
-      id: String(item.id || ''),
-      orderNo: String(item.orderNo || item.order_no || ''),
-      title: String(item.title || item.name || '無題'),
-      category: CATEGORY_MAP[item.category] || 'daily',
-      menuDate: String(item.menuDate || item.menu_date || item.dueDate || item.due_date || ''),
-      clientId: String(item.clientId || item.client_id || ''),
-      productId: String(item.productId || item.product_id || ''),
-      productName: String(item.productName || item.product_name || item.product || ''),
-      quantity: toNumber(item.quantity ?? item.qty),
-      unit: String(item.unit || '食'),
-      dueDate: String(item.dueDate || item.due_date || ''),
-      status: STATUS_MAP[item.status] || 'pending',
-      assignee: String(item.assignee || item.staff || item.input_by || ''),
-      spec: String(item.spec || item.specification || ''),
-      notes: String(item.notes || item.memo || '')
+      id: String(item.id || `menu-${menuDate}`),
+      menuDate,
+      menus,
+      notes: String(item.notes || item.memo || item.備考 || ''),
+      images: normalizeImages(item)
     };
   }
 
@@ -72,54 +69,45 @@ window.OutputNormalize = (function () {
       id: String(item.id || ''),
       name: String(item.name || ''),
       category: String(item.category || ''),
-      defaultUnit: String(item.defaultUnit || item.default_unit || '部'),
+      defaultUnit: String(item.defaultUnit || item.default_unit || '食'),
       notes: String(item.notes || '')
     };
   }
 
   function normalizeData(raw) {
     return {
-      orders: (raw.orders || []).map(normalizeOrder).filter(o => o.id),
+      menus: (raw.menus || []).map(normalizeMenu).filter(m => m.menuDate),
       clients: (raw.clients || []).map(normalizeClient).filter(c => c.id),
       products: (raw.products || []).map(normalizeProduct).filter(p => p.id)
     };
   }
 
   function buildIndexes(data) {
-    const orderById = new Map();
+    const menuById = new Map();
+    const menuByDate = new Map();
     const clientById = new Map();
     const productById = new Map();
-    const ordersByClientId = new Map();
-    const ordersByProductId = new Map();
+
+    data.menus.forEach(menu => {
+      menuById.set(menu.id, menu);
+      menuByDate.set(menu.menuDate, menu);
+    });
 
     data.clients.forEach(client => clientById.set(client.id, client));
     data.products.forEach(product => productById.set(product.id, product));
 
-    data.orders.forEach(order => {
-      orderById.set(order.id, order);
-      if (order.clientId) {
-        const list = ordersByClientId.get(order.clientId) || [];
-        list.push(order);
-        ordersByClientId.set(order.clientId, list);
-      }
-      if (order.productId) {
-        const list = ordersByProductId.get(order.productId) || [];
-        list.push(order);
-        ordersByProductId.set(order.productId, list);
-      }
-    });
-
     return {
-      orderById,
+      menuById,
+      menuByDate,
       clientById,
-      productById,
-      ordersByClientId,
-      ordersByProductId
+      productById
     };
   }
 
   return {
+    MENU_KEYS,
     normalizeData,
-    buildIndexes
+    buildIndexes,
+    normalizeMenu
   };
 })();

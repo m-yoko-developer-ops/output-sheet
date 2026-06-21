@@ -1,37 +1,16 @@
 /* ========================================
-   出数管理表 — TRPGポータル応用
+   出数表入力 — 日付×メニュー名
    ======================================== */
 
-const STATUS_LABELS = {
-  pending: '未着手',
-  in_progress: '製作中',
-  done: '完了',
-  cancelled: 'キャンセル'
-};
-
-const STATUS_CLASSES = {
-  pending: 'status-pending',
-  in_progress: 'status-in_progress',
-  done: 'status-done',
-  cancelled: 'status-cancelled'
-};
-
-const store = {
-  orders: [],
-  clients: [],
-  products: []
-};
+const store = { menus: [] };
 
 const indexes = {
-  orderById: new Map(),
-  clientById: new Map(),
-  productById: new Map(),
-  ordersByClientId: new Map(),
-  ordersByProductId: new Map()
+  menuById: new Map(),
+  menuByDate: new Map()
 };
 
-let route = { section: 'orders', id: null };
-let loadMeta = { orderSource: '', notices: [] };
+let route = { section: 'home', id: null };
+let loadMeta = { menuSource: '', notices: [] };
 
 const contentArea = document.getElementById('contentArea');
 const globalSearch = document.getElementById('globalSearch');
@@ -45,11 +24,11 @@ const SITE_NAME = '出数表入力';
 const SITE_BANNER = '食堂出数入力';
 
 const MENU_CATEGORIES = {
-  daily: '日替わりメニュー',
-  health: '健康',
+  daily: '日替わり',
+  health: '健康ランチ',
   recommend: 'おすすめ',
-  noodle: '麺ランチ',
-  budget: 'おてごろ'
+  noodle: '麵ランチ',
+  budget: 'お手頃350'
 };
 
 const OTHER_MENU_KEYS = ['health', 'recommend', 'noodle', 'budget'];
@@ -63,33 +42,10 @@ let homeState = {
 
 async function loadData() {
   const { data, indexes: built, meta } = await window.loadOutputData();
-  store.orders = data.orders;
-  store.clients = data.clients;
-  store.products = data.products;
-
-  indexes.orderById = built.orderById;
-  indexes.clientById = built.clientById;
-  indexes.productById = built.productById;
-  indexes.ordersByClientId = built.ordersByClientId;
-  indexes.ordersByProductId = built.ordersByProductId;
-
-  loadMeta = meta || { orderSource: '', notices: [] };
-}
-
-function resolveClient(id) {
-  return id ? indexes.clientById.get(id) : null;
-}
-
-function resolveProduct(id) {
-  return id ? indexes.productById.get(id) : null;
-}
-
-function ordersForClient(clientId) {
-  return indexes.ordersByClientId.get(clientId) || [];
-}
-
-function ordersForProduct(productId) {
-  return indexes.ordersByProductId.get(productId) || [];
+  store.menus = data.menus;
+  indexes.menuById = built.menuById;
+  indexes.menuByDate = built.menuByDate;
+  loadMeta = meta || { menuSource: '', notices: [] };
 }
 
 function parseHash() {
@@ -128,18 +84,8 @@ function scrollDetailToTop() {
 }
 
 function updateDocumentTitle() {
-  const entity = getActiveEntity();
-  document.title = entity ? `${entity.name || entity.title} — ${SITE_NAME}` : SITE_NAME;
-}
-
-function getActiveEntity() {
-  if (!route.id) return null;
-  switch (route.section) {
-    case 'orders': return indexes.orderById.get(route.id);
-    case 'clients': return indexes.clientById.get(route.id);
-    case 'products': return indexes.productById.get(route.id);
-    default: return null;
-  }
+  const menu = route.id ? indexes.menuById.get(route.id) : null;
+  document.title = menu ? `${formatDisplayDate(menu.menuDate)} — ${SITE_NAME}` : SITE_NAME;
 }
 
 function renderLoadingScreen() {
@@ -159,31 +105,6 @@ function getSearchQuery() {
 
 function matchesQuery(text, query) {
   return !query || (text || '').toLowerCase().includes(query);
-}
-
-function filterOrders(query) {
-  return store.orders.filter(order => {
-    const client = resolveClient(order.clientId);
-    return matchesQuery(order.title, query) ||
-      matchesQuery(order.orderNo, query) ||
-      matchesQuery(order.productName, query) ||
-      matchesQuery(order.assignee, query) ||
-      matchesQuery(client?.name, query);
-  });
-}
-
-function filterClients(query) {
-  return store.clients.filter(client =>
-    matchesQuery(client.name, query) ||
-    matchesQuery(client.contact, query)
-  );
-}
-
-function filterProducts(query) {
-  return store.products.filter(product =>
-    matchesQuery(product.name, query) ||
-    matchesQuery(product.category, query)
-  );
 }
 
 function escapeHtml(str) {
@@ -212,15 +133,6 @@ function renderEmpty(message = 'なし') {
   return `<p class="empty-note">${message}</p>`;
 }
 
-function renderLink(href, label, sub = '') {
-  return `<a href="${href}" class="entity-link">${escapeHtml(label)}${sub ? `<span class="link-sub">${escapeHtml(sub)}</span>` : ''}</a>`;
-}
-
-function renderLinkList(items) {
-  if (!items.length) return renderEmpty();
-  return `<ul class="link-list">${items.map(item => `<li>${item}</li>`).join('')}</ul>`;
-}
-
 function renderListLayout(listHtml, detailHtml) {
   return `
     <div class="list-panel">${listHtml}</div>
@@ -228,21 +140,14 @@ function renderListLayout(listHtml, detailHtml) {
   `;
 }
 
-function renderDetailSection(heading, bodyHtml, { alwaysShow = false } = {}) {
-  const hasBody = bodyHtml && String(bodyHtml).trim();
-  if (!hasBody && !alwaysShow) return '';
-  const inner = hasBody ? bodyHtml : renderEmpty();
+function renderDetailSection(heading, bodyHtml) {
+  if (!bodyHtml || !String(bodyHtml).trim()) return '';
   return `
     <section class="detail-section">
       <h2 class="section-heading">${escapeHtml(heading)}</h2>
-      ${inner}
+      ${bodyHtml}
     </section>
   `;
-}
-
-function renderInfoRow(label, valueHtml) {
-  if (!isPresent(valueHtml)) return '';
-  return `<div class="info-row"><dt>${escapeHtml(label)}</dt><dd>${valueHtml}</dd></div>`;
 }
 
 function bindNavigation() {
@@ -255,53 +160,9 @@ function bindNavigation() {
   });
 }
 
-function getActiveId(filtered, fallbackId) {
-  if (route.id && filtered.some(item => item.id === route.id)) {
-    return route.id;
-  }
-  if (route.id && filtered.length > 0) {
-    return filtered[0].id;
-  }
-  return fallbackId || filtered[0]?.id || null;
-}
-
-function formatQuantity(quantity, unit) {
-  return `${Number(quantity).toLocaleString('ja-JP')} ${escapeHtml(unit || '部')}`;
-}
-
-function parseDueDate(value) {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function formatDueDate(value) {
-  const d = parseDueDate(value);
-  if (!d) return '—';
-  return d.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
-}
-
-function dueDateClass(value, status) {
-  if (status === 'done' || status === 'cancelled') return '';
-  const d = parseDueDate(value);
-  if (!d) return '';
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(d);
-  due.setHours(0, 0, 0, 0);
-  if (due < today) return 'due-date--overdue';
-  const soon = new Date(today);
-  soon.setDate(soon.getDate() + 7);
-  if (due <= soon) return 'due-date--soon';
-  return '';
-}
-
-function renderStatusBadge(status) {
-  return `<span class="badge ${STATUS_CLASSES[status] || ''}">${STATUS_LABELS[status] || status}</span>`;
-}
-
-function sumQuantity(orders) {
-  return orders.reduce((sum, order) => sum + (order.quantity || 0), 0);
+function getActiveId(filtered) {
+  if (route.id && filtered.some(item => item.id === route.id)) return route.id;
+  return filtered[0]?.id || null;
 }
 
 function toDateInputValue(date) {
@@ -311,63 +172,125 @@ function toDateInputValue(date) {
   return `${y}-${m}-${d}`;
 }
 
+function formatDisplayDate(value) {
+  if (!value) return '—';
+  const parts = value.split('-');
+  if (parts.length === 3) {
+    return `${parts[0]}/${parts[1]}/${parts[2]}`;
+  }
+  return value;
+}
+
 function initHomeState() {
   if (!homeState.selectedDate) {
     homeState.selectedDate = toDateInputValue(new Date());
   }
 }
 
-function getHomeOrders() {
-  initHomeState();
-  const query = homeState.searchQuery.toLowerCase().trim();
-  return store.orders.filter(order => {
-    const dateMatch = order.menuDate === homeState.selectedDate;
-    const catMatch = order.category === homeState.selectedCategory;
-    const searchMatch = !query || order.title.toLowerCase().includes(query);
-    return dateMatch && catMatch && searchMatch;
+function getMenuForDate(date) {
+  return indexes.menuByDate.get(date) || null;
+}
+
+function getMenuName(menu, category) {
+  if (!menu) return '';
+  return menu.menus?.[category] || '';
+}
+
+function filterMenus(query) {
+  return store.menus.filter(menu => {
+    const names = Object.values(menu.menus || {});
+    return matchesQuery(menu.menuDate, query) ||
+      names.some(name => matchesQuery(name, query)) ||
+      matchesQuery(menu.notes, query);
   });
 }
 
-function renderHomeMenuListItems(orders) {
-  if (!orders.length) {
-    return `<li class="home-menu-empty">${renderEmpty('この日のメニューはありません')}</li>`;
+function searchMenusForHome(query) {
+  if (!query) return [];
+  return store.menus.filter(menu => {
+    const names = Object.entries(menu.menus || {})
+      .map(([cat, name]) => ({ cat, name }))
+      .filter(item => matchesQuery(item.name, query));
+    return names.length > 0 || matchesQuery(menu.notes, query);
+  }).flatMap(menu => {
+    return Object.entries(menu.menus || {})
+      .filter(([, name]) => matchesQuery(name, query))
+      .map(([cat, name]) => ({ menu, category: cat, name }));
+  });
+}
+
+function renderHomeSearchResults(query) {
+  const hits = searchMenusForHome(query);
+  if (!hits.length) {
+    return `<div class="home-menu-empty">${renderEmpty('該当するメニューがありません')}</div>`;
   }
-  return orders.map(order => `
-    <li class="home-menu-item" data-nav-section="orders" data-nav-id="${order.id}">
-      <span class="home-menu-item-name">${escapeHtml(order.title)}</span>
-      <span class="home-menu-item-qty">${formatQuantity(order.quantity, order.unit)}</span>
-    </li>
-  `).join('');
+  return `
+    <ul class="home-search-results">
+      ${hits.slice(0, 20).map(hit => `
+        <li class="home-search-item" data-nav-section="menus" data-nav-id="${hit.menu.id}">
+          <span class="home-search-date">${escapeHtml(formatDisplayDate(hit.menu.menuDate))}</span>
+          <span class="home-search-cat">${escapeHtml(MENU_CATEGORIES[hit.category] || hit.category)}</span>
+          <span class="home-search-name">${escapeHtml(hit.name)}</span>
+        </li>
+      `).join('')}
+    </ul>
+  `;
 }
 
-function renderHomeMenuListHtml() {
-  return renderHomeMenuListItems(getHomeOrders());
-}
+function renderHomeMenuCard(menu, category) {
+  const label = MENU_CATEGORIES[category] || '日替わり';
+  const name = getMenuName(menu, category);
 
-function renderHomeSummaryText() {
-  const orders = getHomeOrders();
-  const label = MENU_CATEGORIES[homeState.selectedCategory] || '日替わりメニュー';
-  if (!orders.length) return `${label} — 0 件`;
-  return `${label} — ${orders.length} 件 / 合計 ${sumQuantity(orders).toLocaleString('ja-JP')} 食`;
+  if (!menu) {
+    return `
+      <div class="home-menu-card home-menu-card--empty">
+        <p class="home-menu-card-label">${escapeHtml(label)}</p>
+        <p class="home-menu-card-name">${renderEmpty('この日のデータがありません')}</p>
+      </div>
+    `;
+  }
+
+  if (!isPresent(name)) {
+    return `
+      <div class="home-menu-card home-menu-card--empty">
+        <p class="home-menu-card-label">${escapeHtml(label)}</p>
+        <p class="home-menu-card-name">${renderEmpty('メニュー未登録')}</p>
+      </div>
+    `;
+  }
+
+  const notesHtml = category === 'daily' && isPresent(menu.notes)
+    ? `<div class="home-menu-notes"><p>${escapeHtml(menu.notes)}</p></div>`
+    : '';
+
+  const imagesHtml = menu.images?.length
+    ? `<div class="home-menu-images">${menu.images.map((url, i) =>
+        `<a href="${escapeAttr(url)}" class="home-menu-image-link" target="_blank" rel="noopener noreferrer">画像 ${i + 1}</a>`
+      ).join('')}</div>`
+    : '';
+
+  return `
+    <div class="home-menu-card">
+      <p class="home-menu-card-label">${escapeHtml(label)}</p>
+      <p class="home-menu-card-name">${escapeHtml(name)}</p>
+      ${notesHtml}
+      ${imagesHtml}
+    </div>
+  `;
 }
 
 function bindHomeControls() {
-  const dateInput = document.getElementById('homeDate');
-  const menuToggle = document.getElementById('homeMenuToggle');
-  const searchInput = document.getElementById('homeSearch');
-  const dailyReset = document.getElementById('homeDailyReset');
-
-  dateInput?.addEventListener('change', e => {
+  document.getElementById('homeDate')?.addEventListener('change', e => {
     homeState.selectedDate = e.target.value;
     renderHomeView();
   });
 
-  menuToggle?.addEventListener('click', () => {
+  document.getElementById('homeMenuToggle')?.addEventListener('click', () => {
     homeState.menuOpen = !homeState.menuOpen;
     renderHomeView();
   });
 
-  dailyReset?.addEventListener('click', () => {
+  document.getElementById('homeDailyReset')?.addEventListener('click', () => {
     homeState.selectedCategory = 'daily';
     homeState.menuOpen = false;
     renderHomeView();
@@ -381,12 +304,15 @@ function bindHomeControls() {
     });
   });
 
-  searchInput?.addEventListener('input', e => {
+  document.getElementById('homeSearch')?.addEventListener('input', e => {
     homeState.searchQuery = e.target.value;
-    const listEl = document.getElementById('homeMenuList');
-    const summaryEl = document.getElementById('homeMenuSummary');
-    if (listEl) listEl.innerHTML = renderHomeMenuListHtml();
-    if (summaryEl) summaryEl.textContent = renderHomeSummaryText();
+    const panel = document.getElementById('homeSearchResults');
+    if (panel) {
+      panel.innerHTML = homeState.searchQuery.trim()
+        ? renderHomeSearchResults(homeState.searchQuery.toLowerCase().trim())
+        : '';
+      bindNavigation();
+    }
   });
 }
 
@@ -396,12 +322,13 @@ function renderHomeView() {
 
   const formUrl = (window.AppLinks || {}).orderForm || '#';
   const formReady = formUrl && formUrl !== '#';
-  const categoryLabel = MENU_CATEGORIES[homeState.selectedCategory] || '日替わりメニュー';
-  const orders = getHomeOrders();
+  const categoryLabel = MENU_CATEGORIES[homeState.selectedCategory] || '日替わり';
+  const menu = getMenuForDate(homeState.selectedDate);
+  const hasSearch = homeState.searchQuery.trim().length > 0;
 
   const formButton = formReady
     ? `<a href="${escapeAttr(formUrl)}" class="home-input-btn" target="_blank" rel="noopener noreferrer">入力</a>`
-    : `<span class="home-input-btn home-input-btn--disabled" title="js/links.js にフォームURLを設定してください">入力</span>`;
+    : `<span class="home-input-btn home-input-btn--disabled">入力</span>`;
 
   contentArea.innerHTML = `
     <div class="home-page">
@@ -410,11 +337,9 @@ function renderHomeView() {
           <h1 class="home-banner-title">${escapeHtml(SITE_BANNER)}</h1>
           <img src="images/shokudo-logo.svg" alt="" class="home-banner-logo" width="56" height="56" decoding="async">
         </div>
-        <p class="home-subtitle">${escapeHtml(SITE_NAME)}</p>
         <div class="home-search-row">
           <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="M21 21l-4.35-4.35"/>
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
           <input type="search" id="homeSearch" class="home-search-input" placeholder="メニューを検索..." value="${escapeAttr(homeState.searchQuery)}" aria-label="メニュー検索">
         </div>
@@ -439,7 +364,7 @@ function renderHomeView() {
         </div>
 
         ${homeState.menuOpen ? `
-          <div class="home-category-list" role="list">
+          <div class="home-category-list">
             ${OTHER_MENU_KEYS.map(key => `
               <button type="button" class="home-category-btn ${homeState.selectedCategory === key ? 'is-active' : ''}" data-home-category="${key}">
                 ${escapeHtml(MENU_CATEGORIES[key])}
@@ -448,12 +373,11 @@ function renderHomeView() {
           </div>
         ` : ''}
 
-        <div class="home-menu-panel">
-          <p id="homeMenuSummary" class="home-menu-summary">${escapeHtml(renderHomeSummaryText())}</p>
-          <ul id="homeMenuList" class="home-menu-list">
-            ${renderHomeMenuListItems(orders)}
-          </ul>
+        <div id="homeSearchResults" class="home-search-results-wrap">
+          ${hasSearch ? renderHomeSearchResults(homeState.searchQuery.toLowerCase().trim()) : ''}
         </div>
+
+        ${hasSearch ? '' : renderHomeMenuCard(menu, homeState.selectedCategory)}
       </section>
     </div>
   `;
@@ -462,256 +386,77 @@ function renderHomeView() {
   bindNavigation();
 }
 
-function renderOrderListItem(order, active) {
-  const client = resolveClient(order.clientId);
+function renderMenuListItem(menu, active) {
+  const dailyName = getMenuName(menu, 'daily') || '—';
   return `
     <li class="list-item ${active ? 'active' : ''}"
-        data-nav-section="orders"
-        data-nav-id="${order.id}"
-        role="option"
-        aria-selected="${active}">
-      <span class="list-icon">📦</span>
-      <div class="list-item-info">
-        <div class="list-item-name">${escapeHtml(order.title)}</div>
-        <div class="list-item-sub">${escapeHtml(order.orderNo || '')} · ${escapeHtml(client?.name || '—')}</div>
-      </div>
-      <span class="list-item-qty">${Number(order.quantity).toLocaleString('ja-JP')}${escapeHtml(order.unit)}</span>
-      <span class="list-item-badge ${STATUS_CLASSES[order.status]}">${STATUS_LABELS[order.status]}</span>
-    </li>
-  `;
-}
-
-function renderOrderDetail(order) {
-  const client = resolveClient(order.clientId);
-  const product = resolveProduct(order.productId);
-
-  const headerRows = [
-    renderInfoRow('管理番号', escapeHtml(order.orderNo || '—')),
-    renderInfoRow('取引先', client
-      ? renderLink(`#clients/${client.id}`, client.name)
-      : escapeHtml('—')),
-    renderInfoRow('品目', product
-      ? renderLink(`#products/${product.id}`, product.name, product.category)
-      : escapeHtml(order.productName || '—')),
-    renderInfoRow('品名', escapeHtml(order.productName || product?.name || '—')),
-    renderInfoRow('出数', `<span class="quantity-highlight">${formatQuantity(order.quantity, order.unit)}</span>`),
-    renderInfoRow('納期', `<span class="${dueDateClass(order.dueDate, order.status)}">${formatDueDate(order.dueDate)}</span>`),
-    renderInfoRow('担当', escapeHtml(order.assignee || '—')),
-    renderInfoRow('状態', renderStatusBadge(order.status))
-  ].filter(Boolean).join('');
-
-  return `
-    <article class="entity-detail">
-      <header class="detail-header detail-header--compact">
-        <span class="detail-org-icon">📦</span>
-        <div class="detail-header-body">
-          <h1 class="detail-title">${escapeHtml(order.title)}</h1>
-          <p class="detail-meta">${escapeHtml(order.orderNo || '')}</p>
-        </div>
-      </header>
-
-      <section class="detail-section">
-        <h2 class="section-heading">基本情報</h2>
-        <dl class="info-grid">${headerRows}</dl>
-      </section>
-
-      ${renderDetailSection('仕様', order.spec ? `<div class="prose"><p>${escapeHtml(order.spec)}</p></div>` : '')}
-      ${renderDetailSection('備考', order.notes ? `<div class="prose"><p>${escapeHtml(order.notes)}</p></div>` : '')}
-    </article>
-  `;
-}
-
-function renderOrdersView() {
-  const query = getSearchQuery();
-  const filtered = filterOrders(query);
-  const activeId = getActiveId(filtered);
-  const activeOrder = activeId ? indexes.orderById.get(activeId) : null;
-
-  const listHtml = `
-    <div class="panel-header">
-      <h2 class="panel-title">案件</h2>
-      <span class="panel-count">${filtered.length} 件</span>
-    </div>
-    <ul class="entity-list" role="listbox">
-      ${filtered.map(order => renderOrderListItem(order, order.id === activeId)).join('')}
-    </ul>
-  `;
-
-  const detailHtml = activeOrder
-    ? renderOrderDetail(activeOrder)
-    : `<div class="detail-empty"><p>案件が見つかりません</p></div>`;
-
-  contentArea.innerHTML = renderListLayout(listHtml, detailHtml);
-  bindNavigation();
-}
-
-function renderClientCard(client, active) {
-  const orders = ordersForClient(client.id);
-  const qty = sumQuantity(orders);
-  return `
-    <article class="org-card ${active ? 'active' : ''}"
-             data-nav-section="clients"
-             data-nav-id="${client.id}">
-      <span class="org-card-icon">🏢</span>
-      <h3 class="org-card-name">${escapeHtml(client.name)}</h3>
-      <p class="org-card-summary">${escapeHtml(client.contact || '')}</p>
-      <p class="org-card-meta">案件 ${orders.length} 件 · 累計出数 ${qty.toLocaleString('ja-JP')}</p>
-    </article>
-  `;
-}
-
-function renderClientDetail(client) {
-  const orders = ordersForClient(client.id);
-
-  return `
-    <article class="entity-detail">
-      <header class="detail-header detail-header--compact">
-        <span class="detail-org-icon">🏢</span>
-        <div class="detail-header-body">
-          <h1 class="detail-title">${escapeHtml(client.name)}</h1>
-        </div>
-      </header>
-
-      <section class="detail-section">
-        <h2 class="section-heading">連絡先</h2>
-        <dl class="info-grid info-grid--compact">
-          ${renderInfoRow('担当', escapeHtml(client.contact || '—'))}
-          ${renderInfoRow('電話', escapeHtml(client.phone || '—'))}
-          ${renderInfoRow('メール', escapeHtml(client.email || '—'))}
-        </dl>
-      </section>
-
-      ${renderDetailSection('備考', client.notes ? `<div class="prose"><p>${escapeHtml(client.notes)}</p></div>` : '')}
-
-      <section class="detail-section">
-        <h2 class="section-heading">関連案件</h2>
-        ${orders.length ? `
-          <div class="order-table-wrap">
-            <table class="order-table">
-              <thead>
-                <tr>
-                  <th>管理番号</th>
-                  <th>案件名</th>
-                  <th class="col-qty">出数</th>
-                  <th>納期</th>
-                  <th>状態</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${orders.map(order => `
-                  <tr data-nav-section="orders" data-nav-id="${order.id}">
-                    <td>${escapeHtml(order.orderNo || '—')}</td>
-                    <td>${escapeHtml(order.title)}</td>
-                    <td class="col-qty">${formatQuantity(order.quantity, order.unit)}</td>
-                    <td class="${dueDateClass(order.dueDate, order.status)}">${formatDueDate(order.dueDate)}</td>
-                    <td>${renderStatusBadge(order.status)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        ` : renderEmpty('関連案件はありません')}
-      </section>
-    </article>
-  `;
-}
-
-function renderClientsView() {
-  const query = getSearchQuery();
-  const filtered = filterClients(query);
-  const activeId = getActiveId(filtered);
-  const activeClient = activeId ? indexes.clientById.get(activeId) : null;
-
-  const listHtml = `
-    <div class="panel-header">
-      <h2 class="panel-title">取引先</h2>
-      <span class="panel-count">${filtered.length} 件</span>
-    </div>
-    <div class="org-card-list">
-      ${filtered.map(client => renderClientCard(client, client.id === activeId)).join('')}
-    </div>
-  `;
-
-  const detailHtml = activeClient
-    ? renderClientDetail(activeClient)
-    : `<div class="detail-empty"><p>取引先が見つかりません</p></div>`;
-
-  contentArea.innerHTML = renderListLayout(listHtml, detailHtml);
-  bindNavigation();
-}
-
-function renderProductListItem(product, active) {
-  const orders = ordersForProduct(product.id);
-  return `
-    <li class="list-item ${active ? 'active' : ''}"
-        data-nav-section="products"
-        data-nav-id="${product.id}"
+        data-nav-section="menus"
+        data-nav-id="${menu.id}"
         role="option">
-      <span class="list-icon">🏷️</span>
+      <span class="list-icon">📅</span>
       <div class="list-item-info">
-        <div class="list-item-name">${escapeHtml(product.name)}</div>
-        <div class="list-item-sub">${escapeHtml(product.category || '')} · 案件 ${orders.length} 件</div>
+        <div class="list-item-name">${escapeHtml(formatDisplayDate(menu.menuDate))}</div>
+        <div class="list-item-sub">${escapeHtml(dailyName)}</div>
       </div>
     </li>
   `;
 }
 
-function renderProductDetail(product) {
-  const orders = ordersForProduct(product.id);
-  const qty = sumQuantity(orders);
+function renderMenuDetail(menu) {
+  const rows = ['daily', ...OTHER_MENU_KEYS].map(key => {
+    const name = getMenuName(menu, key);
+    if (!isPresent(name)) return '';
+    return `
+      <div class="menu-detail-row">
+        <dt>${escapeHtml(MENU_CATEGORIES[key])}</dt>
+        <dd>${escapeHtml(name)}</dd>
+      </div>
+    `;
+  }).join('');
+
+  const imagesHtml = menu.images?.length
+    ? `<div class="home-menu-images">${menu.images.map((url, i) =>
+        `<a href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">画像 ${i + 1}</a>`
+      ).join('')}</div>`
+    : '';
 
   return `
     <article class="entity-detail">
       <header class="detail-header detail-header--compact">
-        <span class="detail-org-icon">🏷️</span>
+        <span class="detail-org-icon">📅</span>
         <div class="detail-header-body">
-          <h1 class="detail-title">${escapeHtml(product.name)}</h1>
-          <p class="detail-meta">${escapeHtml(product.category || '—')}</p>
+          <h1 class="detail-title">${escapeHtml(formatDisplayDate(menu.menuDate))}</h1>
         </div>
       </header>
 
       <section class="detail-section">
-        <h2 class="section-heading">基本情報</h2>
-        <dl class="info-grid info-grid--compact">
-          ${renderInfoRow('カテゴリ', escapeHtml(product.category || '—'))}
-          ${renderInfoRow('標準単位', escapeHtml(product.defaultUnit || '—'))}
-          ${renderInfoRow('累計出数', `<span class="quantity-highlight">${qty.toLocaleString('ja-JP')} ${escapeHtml(product.defaultUnit)}</span>`)}
-        </dl>
+        <h2 class="section-heading">メニュー</h2>
+        <dl class="menu-detail-grid">${rows || renderEmpty()}</dl>
       </section>
 
-      ${renderDetailSection('備考', product.notes ? `<div class="prose"><p>${escapeHtml(product.notes)}</p></div>` : '')}
-
-      <section class="detail-section">
-        <h2 class="section-heading">関連案件</h2>
-        ${orders.length ? renderLinkList(
-          orders.map(order =>
-            renderLink(`#orders/${order.id}`, order.title, `${order.orderNo} · ${order.quantity}${order.unit}`)
-          )
-        ) : renderEmpty('関連案件はありません')}
-      </section>
+      ${renderDetailSection('備考', menu.notes ? `<div class="prose"><p>${escapeHtml(menu.notes)}</p></div>` : '')}
+      ${renderDetailSection('画像', imagesHtml)}
     </article>
   `;
 }
 
-function renderProductsView() {
+function renderMenusView() {
   const query = getSearchQuery();
-  const filtered = filterProducts(query);
+  const filtered = filterMenus(query).sort((a, b) => b.menuDate.localeCompare(a.menuDate));
   const activeId = getActiveId(filtered);
-  const activeProduct = activeId ? indexes.productById.get(activeId) : null;
+  const activeMenu = activeId ? indexes.menuById.get(activeId) : null;
 
   const listHtml = `
     <div class="panel-header">
-      <h2 class="panel-title">品目</h2>
+      <h2 class="panel-title">日付一覧</h2>
       <span class="panel-count">${filtered.length} 件</span>
     </div>
-    <ul class="entity-list">
-      ${filtered.map(product => renderProductListItem(product, product.id === activeId)).join('')}
-    </ul>
+    <ul class="entity-list">${filtered.map(menu => renderMenuListItem(menu, menu.id === activeId)).join('')}</ul>
   `;
 
-  const detailHtml = activeProduct
-    ? renderProductDetail(activeProduct)
-    : `<div class="detail-empty"><p>品目が見つかりません</p></div>`;
+  const detailHtml = activeMenu
+    ? renderMenuDetail(activeMenu)
+    : `<div class="detail-empty"><p>日付が見つかりません</p></div>`;
 
   contentArea.innerHTML = renderListLayout(listHtml, detailHtml);
   bindNavigation();
@@ -724,47 +469,24 @@ function renderGlobalSearchResults() {
     return;
   }
 
-  const results = {
-    orders: filterOrders(query),
-    clients: filterClients(query),
-    products: filterProducts(query)
-  };
-
-  const total = results.orders.length + results.clients.length + results.products.length;
-
-  const section = (title, items, renderItem) => {
-    if (!items.length) return '';
-    return `
-      <section class="search-section">
-        <h2 class="section-heading">${title}（${items.length}）</h2>
-        <ul class="search-results">${items.map(item => renderItem(item)).join('')}</ul>
-      </section>
-    `;
-  };
+  const results = filterMenus(query);
 
   contentArea.innerHTML = `
     <div class="search-results-panel">
       <h1 class="search-results-title">「${escapeHtml(query)}」の検索結果</h1>
-      <p class="search-results-count">${total} 件</p>
-      ${section('案件', results.orders, order => `
-        <li class="search-result-item" data-nav-section="orders" data-nav-id="${order.id}">
-          <span class="list-icon">📦</span>
-          <div><strong>${escapeHtml(order.title)}</strong><span>${escapeHtml(order.orderNo || '')} · ${formatQuantity(order.quantity, order.unit)}</span></div>
-        </li>
-      `)}
-      ${section('取引先', results.clients, client => `
-        <li class="search-result-item" data-nav-section="clients" data-nav-id="${client.id}">
-          <span class="list-icon">🏢</span>
-          <div><strong>${escapeHtml(client.name)}</strong><span>${escapeHtml(client.contact || '')}</span></div>
-        </li>
-      `)}
-      ${section('品目', results.products, product => `
-        <li class="search-result-item" data-nav-section="products" data-nav-id="${product.id}">
-          <span class="list-icon">🏷️</span>
-          <div><strong>${escapeHtml(product.name)}</strong><span>${escapeHtml(product.category || '')}</span></div>
-        </li>
-      `)}
-      ${total === 0 ? renderEmpty('該当する項目がありません') : ''}
+      <p class="search-results-count">${results.length} 件</p>
+      <ul class="search-results">
+        ${results.map(menu => `
+          <li class="search-result-item" data-nav-section="menus" data-nav-id="${menu.id}">
+            <span class="list-icon">📅</span>
+            <div>
+              <strong>${escapeHtml(formatDisplayDate(menu.menuDate))}</strong>
+              <span>${escapeHtml(getMenuName(menu, 'daily') || '—')}</span>
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+      ${results.length === 0 ? renderEmpty('該当する項目がありません') : ''}
     </div>
   `;
 
@@ -781,18 +503,12 @@ function render() {
   }
 
   switch (route.section) {
+    case 'menus':
+      renderMenusView();
+      break;
     case 'home':
-      renderHomeView();
-      break;
-    case 'clients':
-      renderClientsView();
-      break;
-    case 'products':
-      renderProductsView();
-      break;
-    case 'orders':
     default:
-      renderOrdersView();
+      renderHomeView();
       break;
   }
 
@@ -803,7 +519,7 @@ function renderFatalError(err) {
   contentArea.innerHTML = `
     <div class="error-panel">
       <h2>データの読み込みに失敗しました</h2>
-      <p class="error-message">出数データを表示できません。HTTP サーバー経由で開いているか確認してください。</p>
+      <p class="error-message">メニューデータを表示できません。</p>
     </div>
   `;
   console.error('[出数表入力]', err);
@@ -819,22 +535,18 @@ function renderNoticeBanner() {
   banner.className = 'notice-banner';
 
   banner.innerHTML = loadMeta.notices.map(notice => {
-    const isFallback = loadMeta.orderSource === 'json-fallback';
+    const isFallback = loadMeta.menuSource === 'json-fallback';
     const title = notice.title || (isFallback ? '最新データを読み込めませんでした' : 'お知らせ');
-    const message = notice.message || '';
-    const fallback = notice.fallback ? `<p class="notice-fallback">${escapeHtml(notice.fallback)}</p>` : '';
-
     return `
       <div class="notice-item notice-warning">
         <p class="notice-title">${escapeHtml(title)}</p>
-        <p class="notice-message">${escapeHtml(message)}</p>
-        ${fallback}
+        <p class="notice-message">${escapeHtml(notice.message || '')}</p>
+        ${notice.fallback ? `<p class="notice-fallback">${escapeHtml(notice.fallback)}</p>` : ''}
       </div>
     `;
   }).join('');
 
-  const header = document.querySelector('.header');
-  if (header) header.insertAdjacentElement('afterend', banner);
+  document.querySelector('.header')?.insertAdjacentElement('afterend', banner);
 }
 
 function openSidebar() {
@@ -852,9 +564,7 @@ function closeSidebar() {
 menuToggle.addEventListener('click', openSidebar);
 sidebarClose.addEventListener('click', closeSidebar);
 overlay.addEventListener('click', closeSidebar);
-
 globalSearch.addEventListener('input', () => render());
-
 globalSearch.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     globalSearch.value = '';
@@ -878,10 +588,6 @@ async function init() {
     await loadData();
     route = parseHash();
     renderNoticeBanner();
-    if (!route.id && route.section === 'orders' && store.orders.length > 0) {
-      location.replace(`#orders/${store.orders[0].id}`);
-      return;
-    }
     updateNavActive();
     render();
   } catch (err) {

@@ -1,21 +1,20 @@
 /**
  * データ取得の統一入口
- * ORDERS: スプレッドシート（Apps Script API）→ 失敗時 orders.json
- * その他: ローカル JSON
+ * menus: スプレッドシート（Apps Script API）→ 失敗時 menus.json
  */
 window.loadOutputData = async function loadOutputData() {
   const jsonConfig = window.AppConfig?.json || { basePath: 'data' };
   const apiConfig = window.AppConfig?.api;
 
   const jsonData = await window.JsonDataProvider.load(jsonConfig);
-  const orderResult = await window.AppsScriptProvider.loadOrders(apiConfig, jsonConfig);
+  const menuResult = await window.AppsScriptProvider.loadMenus(apiConfig, jsonConfig);
 
   const notices = [];
-  if (orderResult.notice) notices.push(orderResult.notice);
+  if (menuResult.notice) notices.push(menuResult.notice);
 
   const raw = {
     ...jsonData,
-    orders: orderResult.orders
+    menus: menuResult.menus
   };
 
   const data = window.OutputNormalize.normalizeData(raw);
@@ -25,7 +24,7 @@ window.loadOutputData = async function loadOutputData() {
     data,
     indexes,
     meta: {
-      orderSource: orderResult.source,
+      menuSource: menuResult.source,
       notices
     }
   };

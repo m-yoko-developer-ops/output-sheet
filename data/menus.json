@@ -1,0 +1,30 @@
+{
+  "menus": [
+    {
+      "id": "menu-2026-06-12",
+      "menuDate": "2026-06-12",
+      "daily": "豚のバーベキューソース",
+      "health": "タラの唐揚げ梅ソース",
+      "recommend": "鶏肉チリ玉あんかけ",
+      "noodle": "濃厚味噌ラーメン",
+      "budget": "鶏天うどん",
+      "notes": "日替わりソースに豚油を入れる。出が悪いので次回考えた方が良い。健康は新メニュー！梅ソースに10%の3色ピーマンみじんを入れる。",
+      "images": [
+        "https://drive.google.com/open?id=1FzV9_fp4mGS5-DpF0xrR0J32WWuCkERi",
+        "https://drive.google.com/open?id=1CXz4jBWnPcdEENjkJp_hyhqs_2B9XsqH",
+        "https://drive.google.com/open?id=1Z3wy6NW1sTMb96yx79ybWMHpNeyvoy7B"
+      ]
+    },
+    {
+      "id": "menu-2026-06-21",
+      "menuDate": "2026-06-21",
+      "daily": "生姜焼き定食",
+      "health": "サラダチキン弁当",
+      "recommend": "特製カレー",
+      "noodle": "醤油ラーメン",
+      "budget": "日替わり小鉢セット",
+      "notes": "",
+      "images": []
+    }
+  ]
+}

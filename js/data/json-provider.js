@@ -1,5 +1,5 @@
 /**
- * ローカル JSON — 案件・取引先・品目
+ * ローカル JSON
  */
 window.JsonDataProvider = {
   async fetchJson(base, file) {
@@ -34,14 +34,14 @@ window.JsonDataProvider = {
 
   async load(config) {
     const base = (config?.basePath || 'data').replace(/\/$/, '');
-    const [orders, clients, products] = await Promise.all([
-      this.fetchJson(base, 'orders.json'),
+    const [menus, clients, products] = await Promise.all([
+      this.fetchJson(base, 'menus.json'),
       this.fetchJson(base, 'clients.json'),
       this.fetchJson(base, 'products.json')
     ]);
 
     return {
-      orders: orders.orders || [],
+      menus: menus.menus || [],
       clients: clients.clients || [],
       products: products.products || []
     };

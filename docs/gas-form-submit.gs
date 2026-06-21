@@ -113,14 +113,30 @@ function ensureEditUrlHeader_(sheet) {
   var width = Math.max(sheet.getLastColumn(), 1);
   var headers = sheet.getRange(1, 1, 1, width).getValues()[0];
 
-  if (headers.some(isEditUrlHeader_)) {
-    return headers;
+  for (var i = 0; i < headers.length; i++) {
+    if (isEditUrlHeader_(headers[i])) {
+      return headers;
+    }
   }
 
   var col = width + 1;
   sheet.getRange(1, col).setValue('edit_url');
   headers.push('edit_url');
   return headers;
+}
+
+function readMenuHeaders_(sheet) {
+  var width = Math.max(sheet.getLastColumn(), 1);
+  return sheet.getRange(1, 1, 1, width).getValues()[0];
+}
+
+function safeEditResponseUrl_(response) {
+  try {
+    return response.getEditResponseUrl() || '';
+  } catch (err) {
+    Logger.log('edit_url skipped: ' + (err.message || err));
+    return '';
+  }
 }
 
 function formResponseToMenuRecord_(response) {
@@ -134,29 +150,36 @@ function formResponseToMenuRecord_(response) {
     budget: '',
     notes: '',
     images: [],
-    edit_url: response.getEditResponseUrl() || ''
+    edit_url: safeEditResponseUrl_(response)
   };
 
   response.getItemResponses().forEach(function (itemResponse) {
-    var title = normalizeTitle_(itemResponse.getItem().getTitle());
-    var value = itemResponse.getResponse();
+    try {
+      var item = itemResponse.getItem();
+      if (!item) return;
 
-    for (var i = 0; i < MENU_FIELD_RULES_.length; i++) {
-      var rule = MENU_FIELD_RULES_[i];
-      var matched = rule.patterns.some(function (pattern) {
-        return pattern.test(title);
-      });
-      if (!matched) continue;
+      var title = normalizeTitle_(item.getTitle());
+      var value = itemResponse.getResponse();
 
-      if (rule.field === 'menu_date') {
-        record.menu_date = formatMenuDate_(value);
-      } else if (rule.field === 'image1' || rule.field === 'image2' || rule.field === 'image3') {
-        var url = fileResponseToUrl_(value);
-        if (url) record.images.push(url);
-      } else {
-        record[rule.field] = responseText_(value);
+      for (var i = 0; i < MENU_FIELD_RULES_.length; i++) {
+        var rule = MENU_FIELD_RULES_[i];
+        var matched = rule.patterns.some(function (pattern) {
+          return pattern.test(title);
+        });
+        if (!matched) continue;
+
+        if (rule.field === 'menu_date') {
+          record.menu_date = formatMenuDate_(value);
+        } else if (rule.field === 'image1' || rule.field === 'image2' || rule.field === 'image3') {
+          var url = fileResponseToUrl_(value);
+          if (url) record.images.push(url);
+        } else {
+          record[rule.field] = responseText_(value);
+        }
+        break;
       }
-      break;
+    } catch (err) {
+      Logger.log('skip item response: ' + (err.message || err));
     }
   });
 
@@ -212,16 +235,24 @@ function recordToTargetRow_(record, targetHeaders) {
 function appendMenuRecord_(record) {
   var ss = getDestinationSpreadsheet_();
   var target = getMenuSheet_(ss);
-  var targetHeaders = ensureEditUrlHeader_(target);
-  var outRow = recordToTargetRow_(record, targetHeaders);
-  var newRow = Math.max(target.getLastRow(), 1) + 1;
+  ensureEditUrlHeader_(target);
 
-  target.getRange(newRow, 1, 1, outRow.length).setValues([outRow]);
+  var targetHeaders = readMenuHeaders_(target);
+  var outRow = recordToTargetRow_(record, targetHeaders);
+
+  if (!outRow.length) {
+    throw new Error('メニュー表の列が取得できません（1行目のヘッダーを確認してください）');
+  }
+
+  target.appendRow(outRow);
+  var newRow = target.getLastRow();
 
   return {
     action: 'appended',
     row: newRow,
-    menu_date: record.menu_date
+    menu_date: record.menu_date,
+    spreadsheet_id: ss.getId(),
+    sheet_name: target.getName()
   };
 }
 
@@ -232,12 +263,73 @@ function appendMenuRecordFromResponse_(response) {
 
 /** フォーム送信時に自動実行 */
 function onFormSubmit(e) {
-  if (!e || !e.response) {
-    throw new Error('onFormSubmit: 回答データがありません');
+  try {
+    if (!e || !e.response) {
+      throw new Error('onFormSubmit: 回答データがありません');
+    }
+
+    var result = appendMenuRecordFromResponse_(e.response);
+    Logger.log('onFormSubmit OK: ' + JSON.stringify(result));
+  } catch (err) {
+    Logger.log('onFormSubmit ERROR: ' + (err.message || err));
+    throw err;
+  }
+}
+
+/** セットアップ診断（失敗時に1回実行） */
+function diagnoseFormSubmitSetup() {
+  var report = {
+    ok: true,
+    checks: []
+  };
+
+  function addCheck(name, passed, detail) {
+    report.checks.push({ name: name, passed: passed, detail: detail || '' });
+    if (!passed) report.ok = false;
   }
 
-  var result = appendMenuRecordFromResponse_(e.response);
-  Logger.log('onFormSubmit: ' + JSON.stringify(result));
+  try {
+    var form = FormApp.getActiveForm();
+    addCheck('active_form', !!form, form ? form.getTitle() : 'フォームから Apps Script を開いてください');
+    if (!form) {
+      Logger.log(JSON.stringify(report, null, 2));
+      return report;
+    }
+
+    var destId = form.getDestinationId();
+    addCheck('form_destination', !!destId, destId || 'フォームの回答先スプレッドシートが未設定です');
+
+    if (destId) {
+      var ss = SpreadsheetApp.openById(destId);
+      addCheck('open_spreadsheet', !!ss, ss ? ss.getName() : 'スプレッドシートを開けません');
+
+      if (ss) {
+        var menuSheet = ss.getSheetByName(MENU_SHEET_NAME);
+        addCheck('menu_sheet', !!menuSheet, menuSheet ? '見つかりました' : 'シート「' + MENU_SHEET_NAME + '」がありません');
+
+        if (menuSheet) {
+          var headers = menuSheet.getRange(1, 1, 1, Math.max(menuSheet.getLastColumn(), 1))
+            .getValues()[0]
+            .map(normalizeHeader_)
+            .filter(Boolean);
+          addCheck('menu_headers', headers.length > 0, headers.join(' | ') || '1行目が空です');
+        }
+
+        var sheetNames = ss.getSheets().map(function (s) { return s.getName(); });
+        addCheck('sheet_list', true, sheetNames.join(', '));
+      }
+    }
+
+    var triggers = ScriptApp.getProjectTriggers().filter(function (t) {
+      return t.getHandlerFunction() === 'onFormSubmit';
+    });
+    addCheck('onFormSubmit_trigger', triggers.length > 0, triggers.length ? '登録済み' : 'installFormSubmitTrigger を実行してください');
+  } catch (err) {
+    addCheck('unexpected_error', false, err.message || String(err));
+  }
+
+  Logger.log(JSON.stringify(report, null, 2));
+  return report;
 }
 
 /** フォーム送信トリガーを登録（1回だけ） */
@@ -267,10 +359,18 @@ function testAppendLastResponse() {
   var form = FormApp.getActiveForm();
   if (!form) throw new Error('Google フォームから Apps Script を開いてください');
 
+  Logger.log('step1: getResponses start');
   var responses = form.getResponses();
   if (!responses.length) return 'フォーム回答がありません';
+  Logger.log('step1: responses=' + responses.length);
 
-  var result = appendMenuRecordFromResponse_(responses[responses.length - 1]);
-  Logger.log(JSON.stringify(result, null, 2));
+  var response = responses[responses.length - 1];
+  Logger.log('step2: latest timestamp=' + response.getTimestamp());
+
+  var record = formResponseToMenuRecord_(response);
+  Logger.log('step3: menu_date=' + record.menu_date);
+
+  var result = appendMenuRecord_(record);
+  Logger.log('step4 OK: ' + JSON.stringify(result, null, 2));
   return result;
 }

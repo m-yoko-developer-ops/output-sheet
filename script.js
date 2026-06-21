@@ -282,10 +282,106 @@ function renderDayListBlock() {
   `;
 }
 
+function formatLongDate(value) {
+  if (!value) return '—';
+  const parts = value.split('-');
+  if (parts.length === 3) {
+    return `${parts[0]}/${Number(parts[1])}/${Number(parts[2])}`;
+  }
+  return value;
+}
+
+function renderListMeta() {
+  const sorted = getSortedMenus();
+  const filtered = getFilteredMenus();
+  const visible = getVisibleMenus();
+  const isSearching = Boolean(appState.searchQuery.trim());
+  const latest = sorted[0]?.menuDate;
+  const oldest = sorted[sorted.length - 1]?.menuDate;
+
+  const statusText = isSearching
+    ? `「${appState.searchQuery.trim()}」で ${filtered.length} 件`
+    : `${visible.length} / ${filtered.length} 日を表示`;
+
+  return `
+    <div class="app-list-meta" id="appListMeta">
+      <div class="app-list-meta-item">
+        <span class="app-list-meta-label">登録</span>
+        <span class="app-list-meta-value">${sorted.length} 日分</span>
+      </div>
+      <div class="app-list-meta-item">
+        <span class="app-list-meta-label">期間</span>
+        <span class="app-list-meta-value">${formatLongDate(oldest)} 〜 ${formatLongDate(latest)}</span>
+      </div>
+      <div class="app-list-meta-item app-list-meta-item--status">
+        <span class="app-list-meta-label">表示</span>
+        <span class="app-list-meta-value">${statusText}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderAppFooter() {
+  const formUrl = (window.AppLinks || {}).orderForm || '#';
+  const formReady = formUrl && formUrl !== '#';
+  const formLink = formReady
+    ? `<a href="${escapeAttr(formUrl)}" class="app-footer-link" target="_blank" rel="noopener noreferrer">Googleフォームで入力</a>`
+    : '';
+
+  return `
+    <footer class="app-footer">
+      <div class="app-footer-card">
+        <div class="app-footer-brand">
+          <img src="${LOGO_PATH}" alt="" class="app-footer-logo" width="48" height="48" decoding="async">
+          <div>
+            <p class="app-footer-title">${escapeHtml(SITE_BANNER)}</p>
+            <p class="app-footer-tagline">メニュー確認・検索・入力のポータル</p>
+          </div>
+        </div>
+        <div class="app-footer-stats" id="appFooterStats"></div>
+        <div class="app-footer-actions">
+          ${formLink}
+          <span class="app-footer-hint">各行の ▽ から詳細・画像・編集へ</span>
+        </div>
+      </div>
+      <p class="app-footer-copy">${escapeHtml(SITE_NAME)}</p>
+    </footer>
+  `;
+}
+
+function updateAppFooterStats() {
+  const mount = document.getElementById('appFooterStats');
+  if (!mount) return;
+
+  const sorted = getSortedMenus();
+  const filtered = getFilteredMenus();
+  const visible = getVisibleMenus();
+  const latest = sorted[0]?.menuDate;
+
+  mount.innerHTML = `
+    <div class="app-footer-stat">
+      <span class="app-footer-stat-num">${sorted.length}</span>
+      <span class="app-footer-stat-label">登録日数</span>
+    </div>
+    <div class="app-footer-stat">
+      <span class="app-footer-stat-num">${visible.length}</span>
+      <span class="app-footer-stat-label">表示中</span>
+    </div>
+    <div class="app-footer-stat">
+      <span class="app-footer-stat-num app-footer-stat-num--date">${escapeHtml(formatShortDate(latest))}</span>
+      <span class="app-footer-stat-label">最新</span>
+    </div>
+    ${appState.searchQuery.trim()
+      ? `<div class="app-footer-stat"><span class="app-footer-stat-num">${filtered.length}</span><span class="app-footer-stat-label">検索結果</span></div>`
+      : ''}
+  `;
+}
+
 function updateDayList() {
   const mount = document.getElementById('dayListMount');
   if (!mount) return;
-  mount.innerHTML = renderDayListBlock();
+  mount.innerHTML = renderListMeta() + renderDayListBlock();
+  updateAppFooterStats();
 }
 
 function bindControls() {
@@ -355,23 +451,26 @@ function renderShell() {
     : `<span class="home-input-btn home-input-btn--disabled">入力</span>`;
 
   contentArea.innerHTML = `
-    <div class="app-page">
-      ${renderNoticeBanner()}
+    <div class="app-shell">
+      <div class="app-page">
+        ${renderNoticeBanner()}
 
-      <header class="app-header">
-        ${renderAppTitlebar()}
-        <div class="app-toolbar">
-          <div class="home-search-row">
-            <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
-            <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." aria-label="検索" autocomplete="off">
+        <header class="app-header">
+          ${renderAppTitlebar()}
+          <div class="app-toolbar">
+            <div class="home-search-row">
+              <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              </svg>
+              <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." aria-label="検索" autocomplete="off">
+            </div>
+            ${formButton}
           </div>
-          ${formButton}
-        </div>
-      </header>
+        </header>
 
-      <div id="dayListMount"></div>
+        <div id="dayListMount"></div>
+      </div>
+      ${renderAppFooter()}
     </div>
   `;
 

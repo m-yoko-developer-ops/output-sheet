@@ -42,6 +42,8 @@ body.app-body {
   min-height: 100vh;
   margin: 0;
   line-height: 1.6;
+  display: flex;
+  flex-direction: column;
 }
 
 *, *::before, *::after {
@@ -70,16 +72,31 @@ a:hover {
 }
 
 .app-main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   max-width: var(--app-max-width);
   margin: 0 auto;
   min-height: 100vh;
   padding: var(--app-shell-padding);
 }
 
+.app-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
 .app-page {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex: 1;
 }
 
 .app-toolbar {
@@ -124,7 +141,36 @@ a:hover {
 @media (min-width: 900px) {
   :root {
     --app-max-width: 880px;
-    --app-shell-padding: 2rem 1.5rem 3rem;
+    --app-shell-padding: 2rem 1.5rem 2rem;
+  }
+
+  body.app-body::before,
+  body.app-body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body.app-body::before {
+    top: 12%;
+    left: max(0.5rem, calc(50% - 560px));
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.22), transparent 70%);
+  }
+
+  body.app-body::after {
+    top: 48%;
+    right: max(0.5rem, calc(50% - 560px));
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.16), transparent 70%);
+  }
+
+  .app-shell {
+    gap: 1.25rem;
   }
 
   .app-page {
@@ -188,6 +234,24 @@ a:hover {
     margin-top: 1rem;
     padding: 0.85rem 1rem;
     font-size: 0.95rem;
+  }
+
+  .app-list-meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .app-footer-card {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .app-footer-stats {
+    justify-content: center;
+  }
+
+  .app-footer-actions {
+    align-items: flex-end;
+    text-align: right;
   }
 }
 
@@ -550,6 +614,162 @@ a:hover {
 .home-input-btn--disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* ---- 一覧サマリー ---- */
+
+.app-list-meta {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+  margin-bottom: 0.85rem;
+}
+
+.app-list-meta-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.95), rgba(254, 249, 195, 0.55));
+}
+
+.app-list-meta-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.app-list-meta-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.app-list-meta-item--status .app-list-meta-value {
+  color: var(--accent-hover);
+}
+
+/* ---- フッター ---- */
+
+.app-footer {
+  margin-top: auto;
+  width: 100%;
+}
+
+.app-footer-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 237, 0.92));
+  box-shadow: var(--shadow-soft);
+}
+
+.app-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-footer-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.app-footer-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.app-footer-tagline {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.app-footer-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.app-footer-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.8rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.app-footer-stat-num {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--accent-hover);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-footer-stat-num--date {
+  font-size: 1rem;
+}
+
+.app-footer-stat-label {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.app-footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.app-footer-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-dim);
+  color: var(--accent-hover);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.app-footer-link:hover {
+  background: var(--bg-active);
+  color: var(--accent-hover);
+}
+
+.app-footer-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.app-footer-copy {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
 }
 
 /* ---- 日ごと一覧 ---- */

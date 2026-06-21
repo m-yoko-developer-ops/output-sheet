@@ -145,6 +145,8 @@ function applySearch(term) {
   updateDayList();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+function hasExpandableContent(menu) {
   return OTHER_MENU_KEYS.some(key => isPresent(getMenuName(menu, key))) ||
     isPresent(menu.notes) ||
     isPresent(menu.assignee) ||

@@ -27,6 +27,7 @@ const MENU_CATEGORIES = {
 };
 
 const OTHER_MENU_KEYS = ['health', 'recommend', 'noodle', 'budget'];
+const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 
 let appState = {
   searchQuery: '',
@@ -74,7 +75,10 @@ function formatShortDate(value) {
   if (!value) return '—';
   const parts = value.split('-');
   if (parts.length === 3) {
-    return `${Number(parts[1])}/${Number(parts[2])}`;
+    const month = Number(parts[1]);
+    const day = Number(parts[2]);
+    const weekday = WEEKDAY_LABELS[new Date(Number(parts[0]), month - 1, day).getDay()];
+    return `${month}/${day}(${weekday})`;
   }
   return value;
 }
@@ -135,7 +139,8 @@ function renderSearchableMenuValue(name) {
   return `<span role="button" tabindex="0" class="day-search-link" data-search-term="${escapeAttr(name)}">${escapeHtml(name)}</span>`;
 }
 
-function applySearch(term) {
+function applySearch(term, options = {}) {
+  const { scrollToTop = true, focusSearch = false } = options;
   appState.searchQuery = String(term || '').trim();
   appState.visibleLimit = PAGE_SIZE;
   appState.expandedDates.clear();
@@ -145,7 +150,12 @@ function applySearch(term) {
 
   updateDayList();
   updateSearchClearButton();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (scrollToTop) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else if (focusSearch) {
+    input?.focus({ preventScroll: true });
+  }
 }
 
 function updateSearchClearButton() {
@@ -382,47 +392,18 @@ function renderAppFooter() {
     <footer class="app-footer">
       <div class="app-footer-card">
         <div class="app-footer-brand">
-          <img src="${LOGO_PATH}" alt="" class="app-footer-logo" width="48" height="48" decoding="async">
+          <img src="${LOGO_PATH}" alt="" class="app-footer-logo" width="48" height="48" decoding="async" loading="lazy">
           <div>
             <p class="app-footer-title">${escapeHtml(SITE_BANNER)}</p>
             <p class="app-footer-tagline">食堂メニューの確認・検索</p>
           </div>
         </div>
-        <div class="app-footer-stats" id="appFooterStats"></div>
         <div class="app-footer-actions">
           ${formLink}
         </div>
       </div>
       ${renderFooterCreditBar()}
     </footer>
-  `;
-}
-
-function updateAppFooterStats() {
-  const mount = document.getElementById('appFooterStats');
-  if (!mount) return;
-
-  const sorted = getSortedMenus();
-  const filtered = getFilteredMenus();
-  const visible = getVisibleMenus();
-  const latest = sorted[0]?.menuDate;
-
-  mount.innerHTML = `
-    <div class="app-footer-stat">
-      <span class="app-footer-stat-num">${sorted.length}</span>
-      <span class="app-footer-stat-label">登録日数</span>
-    </div>
-    <div class="app-footer-stat">
-      <span class="app-footer-stat-num">${visible.length}</span>
-      <span class="app-footer-stat-label">表示中</span>
-    </div>
-    <div class="app-footer-stat">
-      <span class="app-footer-stat-num app-footer-stat-num--date">${escapeHtml(formatShortDate(latest))}</span>
-      <span class="app-footer-stat-label">最新</span>
-    </div>
-    ${appState.searchQuery.trim()
-      ? `<div class="app-footer-stat"><span class="app-footer-stat-num">${filtered.length}</span><span class="app-footer-stat-label">検索結果</span></div>`
-      : ''}
   `;
 }
 
@@ -439,7 +420,6 @@ function updateDayList() {
   const mount = document.getElementById('dayListMount');
   if (!mount) return;
   mount.innerHTML = renderListSectionHeader() + renderListMeta() + renderDayListBlock();
-  updateAppFooterStats();
 }
 
 function bindControls() {
@@ -465,7 +445,7 @@ function bindControls() {
     if (searchLink) {
       e.preventDefault();
       e.stopPropagation();
-      applySearch(searchLink.dataset.searchTerm);
+      applySearch(searchLink.dataset.searchTerm, { scrollToTop: false, focusSearch: true });
       return;
     }
 
@@ -488,11 +468,20 @@ function bindControls() {
   });
 
   contentArea.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      const input = document.getElementById('appSearch');
+      if (input && input.value) {
+        e.preventDefault();
+        clearSearch();
+      }
+      return;
+    }
+
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const searchLink = e.target.closest('[data-search-term]');
     if (!searchLink) return;
     e.preventDefault();
-    applySearch(searchLink.dataset.searchTerm);
+    applySearch(searchLink.dataset.searchTerm, { scrollToTop: false, focusSearch: true });
   });
 }
 
@@ -559,9 +548,13 @@ function renderFatalError(err) {
   contentArea.innerHTML = `
     <div class="error-panel">
       <h2>データの読み込みに失敗しました</h2>
-      <p class="error-message">メニューデータを表示できません。</p>
+      <p class="error-message">メニューデータを表示できません。通信状況を確認してください。</p>
+      <button type="button" id="retryLoadBtn" class="error-retry-btn">再読み込み</button>
     </div>
   `;
+  document.getElementById('retryLoadBtn')?.addEventListener('click', () => {
+    init();
+  });
   console.error('[出数表入力]', err);
 }
 

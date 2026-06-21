@@ -18,6 +18,14 @@
 
   window.AppLinks = {
     publicSite: 'https://m-yoko-developer-ops.github.io/output-sheet/',
-    orderForm: 'https://forms.gle/EFGetgC9g185UaYN7'
+    orderForm: 'https://forms.gle/EFGetgC9g185UaYN7',
+
+    /** フッター（コピーライトバー） */
+    credit: {
+      trialLabel: 'お試し版',
+      startYear: 2026,
+      companyName: 'Owl Technology, inc',
+      companyUrl: 'https://owl-tec.co.jp/'
+    }
   };
 })();

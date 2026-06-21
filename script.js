@@ -346,6 +346,31 @@ function renderListMeta() {
   `;
 }
 
+function getSiteCredit() {
+  const credit = window.AppLinks?.credit || {};
+
+  return {
+    trialLabel: String(credit.trialLabel || 'お試し版'),
+    startYear: Number(credit.startYear) || new Date().getFullYear(),
+    companyName: String(credit.companyName || 'Owl Technology, inc').trim() || 'Owl Technology, inc',
+    companyUrl: String(credit.companyUrl || credit.authorUrl || 'https://owl-tec.co.jp/').trim()
+  };
+}
+
+function renderFooterCreditBar() {
+  const credit = getSiteCredit();
+  const companyHtml = credit.companyUrl
+    ? `<a href="${escapeAttr(credit.companyUrl)}" class="app-footer-author" target="_blank" rel="noopener noreferrer">${escapeHtml(credit.companyName)}</a>`
+    : escapeHtml(credit.companyName);
+
+  return `
+    <div class="app-footer-bar">
+      <span class="app-footer-trial">${escapeHtml(credit.trialLabel)}</span>
+      <span class="app-footer-copyright">© ${companyHtml} ${escapeHtml(String(credit.startYear))}</span>
+    </div>
+  `;
+}
+
 function renderAppFooter() {
   const formUrl = (window.AppLinks || {}).orderForm || '#';
   const formReady = formUrl && formUrl !== '#';
@@ -369,7 +394,7 @@ function renderAppFooter() {
           <span class="app-footer-hint">行を展開すると詳細・画像・編集URLを表示</span>
         </div>
       </div>
-      <p class="app-footer-copy">${escapeHtml(SITE_NAME)}</p>
+      ${renderFooterCreditBar()}
     </footer>
   `;
 }

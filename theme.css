@@ -807,6 +807,50 @@ a:hover {
   color: var(--text-muted);
 }
 
+.app-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, #431407 0%, #292524 100%);
+  color: rgba(255, 251, 245, 0.92);
+}
+
+.app-footer-trial {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255, 251, 245, 0.72);
+}
+
+.app-footer-copyright {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.app-footer-author {
+  color: rgba(255, 251, 245, 0.95);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 251, 245, 0.35);
+  text-underline-offset: 2px;
+}
+
+.app-footer-author:hover {
+  color: #ffffff;
+  text-decoration-color: currentColor;
+}
+
+.app-footer-extension,
+.app-footer-contact {
+  display: none;
+}
+
 /* ---- 日ごと一覧 ---- */
 
 .day-list {

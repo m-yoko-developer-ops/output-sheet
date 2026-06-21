@@ -4,8 +4,8 @@
   "description": "食堂出数入力ポータル",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f3f4f6",
-  "theme_color": "#2563eb",
+  "background_color": "#fff7ed",
+  "theme_color": "#f97316",
   "icons": [
     {
       "src": "images/icon-192.png",

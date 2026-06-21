@@ -15,6 +15,7 @@ const contentArea = document.getElementById('contentArea');
 
 const SITE_NAME = '出数表入力';
 const SITE_BANNER = '食堂出数入力';
+const PAGE_SIZE = 10;
 
 const MENU_CATEGORIES = {
   daily: '日替わり',
@@ -28,8 +29,11 @@ const OTHER_MENU_KEYS = ['health', 'recommend', 'noodle', 'budget'];
 
 let appState = {
   searchQuery: '',
+  visibleLimit: PAGE_SIZE,
   expandedDates: new Set()
 };
+
+let controlsBound = false;
 
 async function loadData() {
   const { data, indexes: built, meta } = await window.loadOutputData();
@@ -79,23 +83,50 @@ function getMenuName(menu, category) {
   return menu.menus?.[category] || '';
 }
 
-function matchesQuery(text, query) {
-  return !query || (text || '').toLowerCase().includes(query);
+function buildSearchHaystack(menu) {
+  const parts = [
+    menu.menuDate,
+    formatShortDate(menu.menuDate),
+    menu.assignee,
+    menu.notes,
+    ...Object.values(menu.menus || {})
+  ];
+  return parts.filter(Boolean).join(' ').toLowerCase();
+}
+
+function normalizeSearchQuery(query) {
+  return String(query || '').toLowerCase().trim();
 }
 
 function menuMatchesSearch(menu, query) {
   if (!query) return true;
-  if (matchesQuery(menu.menuDate, query)) return true;
-  if (matchesQuery(menu.assignee, query)) return true;
-  if (matchesQuery(menu.notes, query)) return true;
-  return Object.values(menu.menus || {}).some(name => matchesQuery(name, query));
+
+  const haystack = buildSearchHaystack(menu);
+  if (haystack.includes(query)) return true;
+
+  const compactQuery = query.replace(/[\/\-.\s年月日]/g, '');
+  if (compactQuery) {
+    const compactHaystack = haystack.replace(/[\/\-.\s]/g, '');
+    if (compactHaystack.includes(compactQuery)) return true;
+  }
+
+  return false;
+}
+
+function getSortedMenus() {
+  return [...store.menus].sort((a, b) => b.menuDate.localeCompare(a.menuDate));
 }
 
 function getFilteredMenus() {
-  const query = appState.searchQuery.toLowerCase().trim();
-  return store.menus
-    .filter(menu => menuMatchesSearch(menu, query))
-    .sort((a, b) => b.menuDate.localeCompare(a.menuDate));
+  const query = normalizeSearchQuery(appState.searchQuery);
+  if (!query) return getSortedMenus();
+  return getSortedMenus().filter(menu => menuMatchesSearch(menu, query));
+}
+
+function getVisibleMenus() {
+  const filtered = getFilteredMenus();
+  if (appState.searchQuery.trim()) return filtered;
+  return filtered.slice(0, appState.visibleLimit);
 }
 
 function hasExpandableContent(menu) {
@@ -187,34 +218,67 @@ function renderDayRow(menu) {
   `;
 }
 
-function renderDayList(menus) {
-  if (!menus.length) {
-    return `<div class="day-list-empty">${renderEmpty(appState.searchQuery.trim() ? '該当する日がありません' : 'データがありません')}</div>`;
+function renderDayListBlock() {
+  const filtered = getFilteredMenus();
+  const visible = getVisibleMenus();
+  const isSearching = Boolean(appState.searchQuery.trim());
+  const hasMore = !isSearching && visible.length < filtered.length;
+
+  if (!visible.length) {
+    return `
+      <div class="day-list-empty">
+        ${renderEmpty(isSearching ? '該当する日がありません' : 'データがありません')}
+      </div>
+    `;
   }
 
   return `
     <div class="day-list">
-      ${menus.map(menu => renderDayRow(menu)).join('')}
+      ${visible.map(menu => renderDayRow(menu)).join('')}
     </div>
+    ${hasMore ? `
+      <button type="button" id="loadMoreBtn" class="load-more-btn">
+        さらに ${PAGE_SIZE} 日を表示（残り ${filtered.length - visible.length} 日）
+      </button>
+    ` : ''}
+    ${isSearching ? `<p class="search-result-count">${filtered.length} 件ヒット</p>` : ''}
   `;
 }
 
+function updateDayList() {
+  const mount = document.getElementById('dayListMount');
+  if (!mount) return;
+  mount.innerHTML = renderDayListBlock();
+}
+
 function bindControls() {
-  contentArea.querySelectorAll('[data-toggle-day]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const date = btn.dataset.toggleDay;
+  if (controlsBound) return;
+  controlsBound = true;
+
+  contentArea.addEventListener('input', e => {
+    if (e.target.id !== 'appSearch') return;
+    appState.searchQuery = e.target.value;
+    appState.visibleLimit = PAGE_SIZE;
+    updateDayList();
+  });
+
+  contentArea.addEventListener('click', e => {
+    const toggleBtn = e.target.closest('[data-toggle-day]');
+    if (toggleBtn && !toggleBtn.disabled) {
+      const date = toggleBtn.dataset.toggleDay;
       if (appState.expandedDates.has(date)) {
         appState.expandedDates.delete(date);
       } else {
         appState.expandedDates.add(date);
       }
-      render({ preserveScroll: true });
-    });
-  });
+      updateDayList();
+      return;
+    }
 
-  document.getElementById('appSearch')?.addEventListener('input', e => {
-    appState.searchQuery = e.target.value;
-    render({ preserveScroll: true });
+    if (e.target.closest('#loadMoreBtn')) {
+      appState.visibleLimit += PAGE_SIZE;
+      updateDayList();
+    }
   });
 }
 
@@ -229,12 +293,9 @@ function renderLoadingScreen() {
   `;
 }
 
-function render(options = {}) {
-  const scrollY = options.preserveScroll ? window.scrollY : 0;
-
+function renderShell() {
   const formUrl = (window.AppLinks || {}).orderForm || '#';
   const formReady = formUrl && formUrl !== '#';
-  const menus = getFilteredMenus();
 
   const formButton = formReady
     ? `<a href="${escapeAttr(formUrl)}" class="home-input-btn" target="_blank" rel="noopener noreferrer">入力</a>`
@@ -253,21 +314,18 @@ function render(options = {}) {
           <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
-          <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." value="${escapeAttr(appState.searchQuery)}" aria-label="検索">
+          <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." aria-label="検索" autocomplete="off">
         </div>
         ${formButton}
       </header>
 
-      ${renderDayList(menus)}
+      <div id="dayListMount"></div>
     </div>
   `;
 
   document.title = SITE_NAME;
   bindControls();
-
-  if (options.preserveScroll) {
-    window.scrollTo(0, scrollY);
-  }
+  updateDayList();
 }
 
 function renderFatalError(err) {
@@ -284,7 +342,7 @@ async function init() {
   renderLoadingScreen();
   try {
     await loadData();
-    render();
+    renderShell();
   } catch (err) {
     renderFatalError(err);
   }

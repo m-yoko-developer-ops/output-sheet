@@ -515,6 +515,32 @@ a:hover {
   font-size: 0.78rem;
 }
 
+.load-more-btn {
+  display: block;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.load-more-btn:hover {
+  border-color: var(--accent-border);
+  color: var(--accent-hover);
+  background: var(--bg-active);
+}
+
+.search-result-count {
+  margin-top: 0.65rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
 .home-controls {
   display: flex;
   flex-direction: column;

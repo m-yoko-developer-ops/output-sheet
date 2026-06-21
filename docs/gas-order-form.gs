@@ -463,7 +463,11 @@ function doGet(e) {
   var callback = e && e.parameter && e.parameter.callback;
 
   if (type === 'version') {
-    return jsonResponse_({ api_version: '2026-06-21-menus-v1' }, callback);
+    return jsonResponse_({ api_version: '2026-06-21-menus-v2-access' }, callback);
+  }
+
+  if (type === 'access') {
+    return handleAccessApi_(e, callback);
   }
 
   if (type === 'menus' || type === 'orders') {
@@ -471,6 +475,121 @@ function doGet(e) {
   }
 
   return jsonResponse_({ error: 'unknown type', type: type }, callback);
+}
+
+/** 閲覧PIN用「設定」シートを作成（1回実行） */
+function setupAccessSettings() {
+  var ss = getSpreadsheet_();
+  getOrCreateSettingsSheet_(ss);
+  syncAccessPinFromSheet_();
+  return '設定シートを用意しました（閲覧PIN / 閲覧ゲート）';
+}
+
+function getOrCreateSettingsSheet_(ss) {
+  var sheet = ss.getSheetByName('設定');
+  if (!sheet) {
+    sheet = ss.insertSheet('設定');
+    sheet.getRange(1, 1, 2, 2).setValues([
+      ['閲覧PIN', '1234'],
+      ['閲覧ゲート', 'TRUE']
+    ]);
+  }
+  return sheet;
+}
+
+function readSettingFromSheet_(key) {
+  var ss = getSpreadsheet_();
+  var sheet = ss.getSheetByName('設定');
+  if (!sheet) return null;
+
+  var values = sheet.getDataRange().getValues();
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0] || '').trim() === key) {
+      return String(values[i][1] != null ? values[i][1] : '').trim();
+    }
+  }
+  return null;
+}
+
+function writeSettingToSheet_(key, value) {
+  var ss = getSpreadsheet_();
+  var sheet = getOrCreateSettingsSheet_(ss);
+  var values = sheet.getDataRange().getValues();
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0] || '').trim() === key) {
+      sheet.getRange(i + 1, 2).setValue(value);
+      return;
+    }
+  }
+  sheet.appendRow([key, value]);
+}
+
+function syncAccessPinFromSheet_() {
+  var pin = readSettingFromSheet_('閲覧PIN');
+  if (validatePinFormat_(pin)) {
+    PropertiesService.getScriptProperties().setProperty('ACCESS_PIN', pin);
+  }
+}
+
+function validatePinFormat_(pin) {
+  return /^\d{4}$/.test(String(pin || '').trim());
+}
+
+function isAccessGateEnabled_() {
+  var sheetVal = readSettingFromSheet_('閲覧ゲート');
+  if (sheetVal != null && sheetVal !== '') {
+    return /^(true|1|はい|on|有効)$/i.test(sheetVal);
+  }
+  var props = PropertiesService.getScriptProperties().getProperty('ACCESS_GATE_ENABLED');
+  if (props != null) return props === 'true';
+  return true;
+}
+
+function getAccessPin_() {
+  syncAccessPinFromSheet_();
+  var pin = readSettingFromSheet_('閲覧PIN');
+  if (validatePinFormat_(pin)) return pin;
+
+  pin = PropertiesService.getScriptProperties().getProperty('ACCESS_PIN');
+  if (validatePinFormat_(pin)) return pin;
+
+  return '1234';
+}
+
+function handleAccessApi_(e, callback) {
+  var action = String((e && e.parameter && e.parameter.action) || 'status').toLowerCase();
+
+  if (action === 'status') {
+    return jsonResponse_({
+      enabled: isAccessGateEnabled_(),
+      pinLength: 4,
+      remote: true
+    }, callback);
+  }
+
+  if (action === 'verify') {
+    var pin = String((e && e.parameter && e.parameter.pin) || '').trim();
+    if (!isAccessGateEnabled_()) {
+      return jsonResponse_({ ok: true, skipped: true }, callback);
+    }
+    return jsonResponse_({ ok: pin === getAccessPin_() }, callback);
+  }
+
+  if (action === 'change') {
+    var current = String((e && e.parameter && e.parameter.current) || '').trim();
+    var next = String((e && e.parameter && e.parameter.next) || '').trim();
+    if (!validatePinFormat_(next)) {
+      return jsonResponse_({ ok: false, error: 'invalid_format' }, callback);
+    }
+    if (current !== getAccessPin_()) {
+      return jsonResponse_({ ok: false, error: 'wrong_current' }, callback);
+    }
+    writeSettingToSheet_('閲覧PIN', next);
+    PropertiesService.getScriptProperties().setProperty('ACCESS_PIN', next);
+    return jsonResponse_({ ok: true }, callback);
+  }
+
+  return jsonResponse_({ error: 'unknown action', action: action }, callback);
 }
 
 function jsonResponse_(data, callback) {

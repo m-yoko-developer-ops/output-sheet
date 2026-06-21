@@ -382,12 +382,273 @@ a:hover {
   color: var(--text-secondary);
 }
 
+/* ---- 閲覧ゲート ---- */
+
+.access-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(72vh, 540px);
+  padding: 1.5rem 1rem;
+}
+
+.access-gate-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: min(100%, 300px);
+  padding: 1.85rem 1.65rem 1.55rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 247, 237, 0.94) 55%, rgba(255, 251, 235, 0.92) 100%);
+  box-shadow: var(--shadow-card), 0 0 0 6px rgba(249, 115, 22, 0.07);
+  text-align: center;
+}
+
+.access-gate-card--shake {
+  animation: accessGateShake 0.42s ease;
+}
+
+.access-gate-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 0.15rem;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.14);
+}
+
+.access-gate-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.access-gate-lead {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.access-gate-input-row {
+  width: 100%;
+  margin-top: 0.15rem;
+}
+
+.access-gate-input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--text-primary);
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: 0.45em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 1px 2px rgba(67, 20, 7, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.access-gate-input:focus {
+  outline: none;
+  border-color: var(--accent-warm);
+  box-shadow: var(--ring-focus);
+}
+
+.access-gate-input--error {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+}
+
+.access-gate-error {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.access-gate-submit {
+  width: 100%;
+  margin-top: 0.15rem;
+  padding: 0.68rem 1rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--accent-warm), var(--accent));
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-btn);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.access-gate-submit:hover {
+  filter: brightness(1.05);
+}
+
+.access-gate-submit--inline {
+  width: auto;
+  min-width: 108px;
+  margin-top: 0;
+}
+
+.access-settings {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.access-settings-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(67, 20, 7, 0.35);
+}
+
+.access-settings-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 360px);
+  padding: 1.35rem 1.25rem 1.15rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 237, 0.96));
+  box-shadow: var(--shadow-card);
+}
+
+.access-settings-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.access-settings-lead {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.access-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.access-settings-field .access-gate-input {
+  font-size: 1.2rem;
+  letter-spacing: 0.35em;
+}
+
+.access-settings-message {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.access-settings-message--error {
+  color: #dc2626;
+}
+
+.access-settings-message--ok {
+  color: #15803d;
+}
+
+.access-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.app-footer-bar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.app-footer-pin-btn {
+  padding: 0.22rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.app-footer-pin-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+@keyframes accessGateShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .access-gate-card--shake {
+    animation: none;
+  }
+}
+
+.access-gate-host {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(251, 191, 36, 0.28), transparent 42%),
+    radial-gradient(circle at 88% 4%, rgba(52, 211, 153, 0.18), transparent 38%),
+    radial-gradient(circle at 50% 100%, rgba(249, 115, 22, 0.12), transparent 45%),
+    linear-gradient(165deg, #fff1e6 0%, #fffbeb 42%, #ecfdf5 100%);
+}
+
 .portal-loading {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: min(72vh, 540px);
   padding: 1.5rem 1rem;
+}
+
+.portal-loading--overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  min-height: 100vh;
+  margin: 0;
+  padding: 1.5rem 1rem;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(251, 191, 36, 0.28), transparent 42%),
+    radial-gradient(circle at 88% 4%, rgba(52, 211, 153, 0.18), transparent 38%),
+    radial-gradient(circle at 50% 100%, rgba(249, 115, 22, 0.12), transparent 45%),
+    linear-gradient(165deg, #fff1e6 0%, #fffbeb 42%, #ecfdf5 100%);
+  transition: opacity 0.52s ease;
+}
+
+.app-reveal {
+  width: 100%;
 }
 
 .portal-loading-card {
@@ -403,26 +664,37 @@ a:hover {
   background: linear-gradient(155deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 247, 237, 0.94) 55%, rgba(255, 251, 235, 0.92) 100%);
   box-shadow: var(--shadow-card), 0 0 0 6px rgba(249, 115, 22, 0.07);
   overflow: hidden;
-  transition: opacity 0.34s ease, transform 0.34s ease;
+  transition: opacity 0.52s ease, transform 0.52s ease;
 }
 
 .portal-loading--exit {
   opacity: 0;
-  transform: scale(0.985);
+  pointer-events: none;
 }
 
 .portal-loading--exit .portal-loading-card {
   opacity: 0;
-  transform: scale(0.94) translateY(10px);
+  transform: scale(0.94) translateY(12px);
 }
 
 .app-shell--enter {
   opacity: 0;
-  transform: translateY(14px);
-  transition: opacity 0.46s ease, transform 0.46s ease;
+  transform: translateY(10px);
+  transition: opacity 0.52s ease, transform 0.52s ease;
 }
 
 .app-shell--enter.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.day-list-mount--enter {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.42s ease, transform 0.42s ease;
+}
+
+.day-list-mount--enter.is-visible {
   opacity: 1;
   transform: translateY(0);
 }
@@ -549,7 +821,8 @@ a:hover {
 
   .portal-loading--exit,
   .portal-loading--exit .portal-loading-card,
-  .app-shell--enter {
+  .app-shell--enter,
+  .day-list-mount--enter {
     opacity: 1;
     transform: none;
     transition: none;

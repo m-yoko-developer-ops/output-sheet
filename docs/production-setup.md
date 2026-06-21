@@ -53,6 +53,15 @@ Googleフォーム → gas-form-submit.gs → メニュー表（DB）
 |-----|----------|
 | `.../exec?type=version` | `{ "api_version": "..." }` |
 | `.../exec?type=menus` | 日付ごとの JSON 配列 |
+| `.../exec?type=access&action=status` | 閲覧ゲートの状態 |
+| `.../exec?type=access&action=verify&pin=1234` | PIN 照合（true/false） |
+
+### 閲覧 PIN（サイトから変更可）
+
+1. **`setupAccessSettings`** を1回実行 → スプレッドシートに **「設定」** シートができる
+2. 初期値: `閲覧PIN` = `1234` / `閲覧ゲート` = `TRUE`
+3. サイトフッターの **PIN変更** から変更（現在の PIN が必要）
+4. シートを直接編集しても反映される（次回 verify 時）
 
 ---
 
@@ -91,6 +100,8 @@ Googleフォーム → gas-form-submit.gs → メニュー表（DB）
 - [ ] デフォルトは **日替わり**
 - [ ] **メニュー ▼** で健康 / おすすめ / 麵ランチ / お手頃350
 - [ ] **入力** で Google フォームが開く
+- [ ] 閲覧 PIN 入力後に一覧が表示される
+- [ ] フッター **PIN変更** で番号を更新できる
 - [ ] スマホ幅で1カラム表示
 - [ ] API 未設定時は `data/menus.json` のサンプル表示
 

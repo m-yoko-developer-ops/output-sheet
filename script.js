@@ -38,7 +38,9 @@ let appState = {
 let controlsBound = false;
 
 const LOADING_MIN_MS = 650;
-const LOADING_FADE_MS = 340;
+const CROSSFADE_MS = 520;
+const LIST_ENTER_MS = 420;
+const LIST_ENTER_DELAY_MS = 90;
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -48,24 +50,114 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function fadeOutLoadingScreen() {
+function buildShellMarkup({ shellEnter = false } = {}) {
+  const formUrl = (window.AppLinks || {}).orderForm || '#';
+  const formReady = formUrl && formUrl !== '#';
+  const formButton = formReady
+    ? `<a href="${escapeAttr(formUrl)}" class="home-input-btn" target="_blank" rel="noopener noreferrer">入力</a>`
+    : `<span class="home-input-btn home-input-btn--disabled">入力</span>`;
+  const shellClass = shellEnter ? 'app-shell app-shell--enter' : 'app-shell';
+
+  return `
+    <div class="${shellClass}">
+      <div class="app-page">
+        ${renderNoticeBanner()}
+
+        <header class="app-header">
+          ${renderAppHeaderBrand()}
+          <div class="app-header-tools">
+            <div class="home-search-row">
+              <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              </svg>
+              <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." aria-label="検索" autocomplete="off">
+              <button type="button" id="appSearchClear" class="home-search-clear" aria-label="検索をクリア" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            ${formButton}
+          </div>
+        </header>
+
+        <div id="dayListMount" class="day-list-mount"></div>
+      </div>
+      ${renderAppFooter()}
+    </div>
+  `;
+}
+
+function mountShellControls() {
+  document.title = SITE_NAME;
+  bindControls();
+  window.AppAccessGate?.bindSettings?.();
+}
+
+function revealListMount() {
+  const listMount = document.getElementById('dayListMount');
+  if (!listMount) return;
+
+  updateDayList();
+
+  if (prefersReducedMotion()) return;
+
+  listMount.classList.add('day-list-mount--enter');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => listMount.classList.add('is-visible'));
+  });
+}
+
+async function transitionFromLoadingToShell() {
+  const loadingEl = contentArea.querySelector('.portal-loading');
+
+  if (prefersReducedMotion()) {
+    if (loadingEl) loadingEl.remove();
+    contentArea.innerHTML = buildShellMarkup();
+    mountShellControls();
+    updateDayList();
+    return;
+  }
+
+  const reveal = document.createElement('div');
+  reveal.className = 'app-reveal';
+  reveal.innerHTML = buildShellMarkup({ shellEnter: true });
+  contentArea.innerHTML = '';
+  contentArea.appendChild(reveal);
+
+  if (loadingEl) {
+    loadingEl.classList.add('portal-loading--overlay');
+    loadingEl.setAttribute('aria-hidden', 'true');
+    contentArea.appendChild(loadingEl);
+  }
+
+  mountShellControls();
+
+  const shell = reveal.querySelector('.app-shell');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      shell?.classList.add('is-visible');
+      loadingEl?.classList.add('portal-loading--exit');
+    });
+  });
+
+  await sleep(CROSSFADE_MS);
+  loadingEl?.remove();
+
+  await sleep(LIST_ENTER_DELAY_MS);
+  revealListMount();
+  await sleep(LIST_ENTER_MS);
+}
+
+async function fadeOutLoadingOverlay() {
   if (prefersReducedMotion()) return;
 
   const loading = contentArea.querySelector('.portal-loading');
   if (!loading) return;
 
-  loading.classList.add('portal-loading--exit');
-  await sleep(LOADING_FADE_MS);
-}
-
-function revealAppShell() {
-  const shell = contentArea.querySelector('.app-shell');
-  if (!shell || prefersReducedMotion()) return;
-
-  shell.classList.add('app-shell--enter');
-  requestAnimationFrame(() => {
-    shell.classList.add('is-visible');
-  });
+  loading.classList.add('portal-loading--overlay', 'portal-loading--exit');
+  await sleep(CROSSFADE_MS);
+  loading.remove();
 }
 
 async function loadData() {
@@ -413,7 +505,10 @@ function renderFooterCreditBar() {
   return `
     <div class="app-footer-bar">
       <span class="app-footer-trial">${escapeHtml(credit.trialLabel)}</span>
-      <span class="app-footer-copyright">© ${companyHtml} ${escapeHtml(String(credit.startYear))}</span>
+      <div class="app-footer-bar-actions">
+        ${window.AppAccessGate?.renderSettingsButton?.() || ''}
+        <span class="app-footer-copyright">© ${companyHtml} ${escapeHtml(String(credit.startYear))}</span>
+      </div>
     </div>
   `;
 }
@@ -523,44 +618,8 @@ function renderLoadingScreen() {
 }
 
 function renderShell() {
-  const formUrl = (window.AppLinks || {}).orderForm || '#';
-  const formReady = formUrl && formUrl !== '#';
-
-  const formButton = formReady
-    ? `<a href="${escapeAttr(formUrl)}" class="home-input-btn" target="_blank" rel="noopener noreferrer">入力</a>`
-    : `<span class="home-input-btn home-input-btn--disabled">入力</span>`;
-
-  contentArea.innerHTML = `
-    <div class="app-shell">
-      <div class="app-page">
-        ${renderNoticeBanner()}
-
-        <header class="app-header">
-          ${renderAppHeaderBrand()}
-          <div class="app-header-tools">
-            <div class="home-search-row">
-              <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-              </svg>
-              <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." aria-label="検索" autocomplete="off">
-              <button type="button" id="appSearchClear" class="home-search-clear" aria-label="検索をクリア" hidden>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            ${formButton}
-          </div>
-        </header>
-
-        <div id="dayListMount"></div>
-      </div>
-      ${renderAppFooter()}
-    </div>
-  `;
-
-  document.title = SITE_NAME;
-  bindControls();
+  contentArea.innerHTML = buildShellMarkup();
+  mountShellControls();
   updateDayList();
 }
 
@@ -588,13 +647,15 @@ async function init() {
     const remaining = LOADING_MIN_MS - (Date.now() - startedAt);
     if (remaining > 0) await sleep(remaining);
 
-    await fadeOutLoadingScreen();
-    renderShell();
-    revealAppShell();
+    await transitionFromLoadingToShell();
   } catch (err) {
-    await fadeOutLoadingScreen();
+    await fadeOutLoadingOverlay();
     renderFatalError(err);
   }
 }
 
-init();
+if (window.AppAccessGate) {
+  window.AppAccessGate.requireAccess(init);
+} else {
+  init();
+}

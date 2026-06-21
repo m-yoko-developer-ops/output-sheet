@@ -21,6 +21,10 @@
     orderForm: 'https://forms.gle/EFGetgC9g185UaYN7',
     manualUrl: appRoot + 'manual.html',
 
+    /** 閲覧ゲート（API 未接続時のフォールバック PIN） */
+    accessPin: '1234',
+    accessGate: true,
+
     /** フッター（コピーライトバー） */
     credit: {
       trialLabel: 'お試し版',

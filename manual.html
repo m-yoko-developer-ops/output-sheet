@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="app-body">
-  <main class="app-main">
+  <main class="app-main" id="manualRoot" hidden>
     <div class="app-shell">
       <article class="app-page manual-page">
         <header class="manual-header">
@@ -20,6 +20,13 @@
           <h1 class="manual-title">使い方マニュアル</h1>
           <p class="manual-lead">食堂出数入力サイトの基本的な操作です。</p>
         </header>
+
+        <section class="manual-section">
+          <h2 class="manual-section-title">0. 閲覧パスワード</h2>
+          <p>一覧を開くとき、最初に<strong>4桁の数字</strong>の入力が求められます。関係者から共有された番号を入力してください。</p>
+          <p>番号の変更は、一覧画面フッターの <strong>PIN変更</strong> から行えます（現在の番号が必要）。スプレッドシートの「設定」シートにも反映されます。</p>
+          <p class="manual-note">ブラウザのタブを閉じると、次回また入力が必要です。</p>
+        </section>
 
         <section class="manual-section">
           <h2 class="manual-section-title">1. メニューを見る</h2>
@@ -84,12 +91,25 @@
   </main>
 
   <script src="js/links.js"></script>
+  <script src="js/access-gate.js"></script>
   <script>
     (function () {
-      var form = (window.AppLinks || {}).orderForm;
-      var link = document.getElementById('manualFormLink');
-      if (link && form && form !== '#') link.href = form;
-      else if (link) link.style.display = 'none';
+      function showManual() {
+        var root = document.getElementById('manualRoot');
+        if (root) root.hidden = false;
+        window.AppAccessGate?.bindSettings?.();
+
+        var form = (window.AppLinks || {}).orderForm;
+        var link = document.getElementById('manualFormLink');
+        if (link && form && form !== '#') link.href = form;
+        else if (link) link.style.display = 'none';
+      }
+
+      if (window.AppAccessGate) {
+        window.AppAccessGate.requireAccess(showManual);
+      } else {
+        showManual();
+      }
     })();
   </script>
 </body>

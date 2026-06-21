@@ -131,7 +131,7 @@ function getVisibleMenus() {
 
 function renderSearchableMenuValue(name) {
   if (!isPresent(name)) return escapeHtml(name);
-  return `<button type="button" class="day-search-link" data-search-term="${escapeAttr(name)}">${escapeHtml(name)}</button>`;
+  return `<span role="button" tabindex="0" class="day-search-link" data-search-term="${escapeAttr(name)}">${escapeHtml(name)}</span>`;
 }
 
 function applySearch(term) {
@@ -217,19 +217,24 @@ function renderDayRow(menu) {
   const dailyText = isPresent(dailyName) ? dailyName : '—';
   const expandable = hasExpandableContent(menu);
 
+  const headInner = `
+    <span class="day-row-date">${escapeHtml(formatShortDate(menu.menuDate))}</span>
+    <span class="day-row-daily">日替わり：${isPresent(dailyName) ? renderSearchableMenuValue(dailyName) : escapeHtml(dailyText)}</span>
+    ${expandable ? `<span class="day-row-toggle" aria-hidden="true">${expanded ? '△' : '▽'}</span>` : ''}
+  `;
+
   return `
     <article class="day-row ${expanded ? 'is-expanded' : ''}">
-      <button
-        type="button"
-        class="day-row-head ${expandable ? '' : 'day-row-head--plain'}"
-        data-toggle-day="${escapeAttr(menu.menuDate)}"
-        aria-expanded="${expanded}"
-        ${expandable ? '' : 'disabled'}
-      >
-        <span class="day-row-date">${escapeHtml(formatShortDate(menu.menuDate))}</span>
-        <span class="day-row-daily">日替わり：${isPresent(dailyName) ? renderSearchableMenuValue(dailyName) : escapeHtml(dailyText)}</span>
-        ${expandable ? `<span class="day-row-toggle" aria-hidden="true">${expanded ? '△' : '▽'}</span>` : ''}
-      </button>
+      ${expandable ? `
+        <button
+          type="button"
+          class="day-row-head"
+          data-toggle-day="${escapeAttr(menu.menuDate)}"
+          aria-expanded="${expanded}"
+        >${headInner}</button>
+      ` : `
+        <div class="day-row-head day-row-head--plain">${headInner}</div>
+      `}
       ${expanded && expandable ? renderDayDetails(menu) : ''}
     </article>
   `;
@@ -289,7 +294,7 @@ function bindControls() {
     }
 
     const toggleBtn = e.target.closest('[data-toggle-day]');
-    if (toggleBtn && !toggleBtn.disabled) {
+    if (toggleBtn) {
       const date = toggleBtn.dataset.toggleDay;
       if (appState.expandedDates.has(date)) {
         appState.expandedDates.delete(date);
@@ -304,6 +309,14 @@ function bindControls() {
       appState.visibleLimit += PAGE_SIZE;
       updateDayList();
     }
+  });
+
+  contentArea.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const searchLink = e.target.closest('[data-search-term]');
+    if (!searchLink) return;
+    e.preventDefault();
+    applySearch(searchLink.dataset.searchTerm);
   });
 }
 

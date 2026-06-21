@@ -504,9 +504,11 @@ a:hover {
   cursor: pointer;
 }
 
-.day-search-link:hover {
+.day-search-link:hover,
+.day-search-link:focus-visible {
   color: var(--accent-hover);
   text-decoration-color: currentColor;
+  outline: none;
 }
 
 .day-row-daily .day-search-link {

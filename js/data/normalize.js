@@ -45,6 +45,7 @@ window.OutputNormalize = (function () {
     return {
       id: String(item.id || `menu-${menuDate}`),
       menuDate,
+      assignee: String(item.assignee || item.input_by || item.入力者 || ''),
       menus,
       notes: String(item.notes || item.memo || item.備考 || ''),
       images: normalizeImages(item)

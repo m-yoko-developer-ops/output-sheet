@@ -19,9 +19,9 @@
   window.AppConfig = {
     appRoot,
 
-    /** GAS デプロイ後に URL を貼る（docs/production-setup.md 参照） */
+    /** GAS ウェブアプリ URL */
     api: {
-      baseUrl: '',
+      baseUrl: 'https://script.google.com/macros/s/AKfycbxMHl7OJ4kvmGfQKZqd92-rzQMMcDsIjlxZ1E7gCyL5xf285JcD2IkGcykQTy5w5Npf/exec',
       timeoutMs: 30000
     },
 

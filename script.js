@@ -191,9 +191,14 @@ function hasExpandableContent(menu) {
 }
 
 function renderAppTitlebar() {
+  const manualUrl = (window.AppLinks || {}).manualUrl || 'manual.html';
+
   return `
     <div class="app-titlebar">
-      <h1 class="app-titlebar-text">${escapeHtml(SITE_BANNER)}</h1>
+      <div class="app-titlebar-main">
+        <h1 class="app-titlebar-text">${escapeHtml(SITE_BANNER)}</h1>
+        <a href="${escapeAttr(manualUrl)}" class="app-titlebar-help">使い方</a>
+      </div>
       <img src="${LOGO_PATH}" alt="" class="app-titlebar-logo" width="56" height="56" decoding="async">
     </div>
   `;
@@ -382,26 +387,8 @@ function renderFooterCreditBar() {
 }
 
 function renderAppFooter() {
-  const formUrl = (window.AppLinks || {}).orderForm || '#';
-  const formReady = formUrl && formUrl !== '#';
-  const formLink = formReady
-    ? `<a href="${escapeAttr(formUrl)}" class="app-footer-link" target="_blank" rel="noopener noreferrer">入力フォーム</a>`
-    : '';
-
   return `
     <footer class="app-footer">
-      <div class="app-footer-card">
-        <div class="app-footer-brand">
-          <img src="${LOGO_PATH}" alt="" class="app-footer-logo" width="48" height="48" decoding="async" loading="lazy">
-          <div>
-            <p class="app-footer-title">${escapeHtml(SITE_BANNER)}</p>
-            <p class="app-footer-tagline">食堂メニューの確認・検索</p>
-          </div>
-        </div>
-        <div class="app-footer-actions">
-          ${formLink}
-        </div>
-      </div>
       ${renderFooterCreditBar()}
     </footer>
   `;
@@ -504,9 +491,6 @@ function renderShell() {
     ? `<a href="${escapeAttr(formUrl)}" class="home-input-btn" target="_blank" rel="noopener noreferrer">入力</a>`
     : `<span class="home-input-btn home-input-btn--disabled">入力</span>`;
 
-  const manualUrl = (window.AppLinks || {}).manualUrl || 'manual.html';
-  const manualButton = `<a href="${escapeAttr(manualUrl)}" class="home-manual-btn">マニュアル</a>`;
-
   contentArea.innerHTML = `
     <div class="app-shell">
       <div class="app-page">
@@ -526,10 +510,7 @@ function renderShell() {
                 </svg>
               </button>
             </div>
-            <div class="home-toolbar-actions">
-              ${manualButton}
-              ${formButton}
-            </div>
+            ${formButton}
           </div>
         </header>
 

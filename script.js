@@ -129,7 +129,22 @@ function getVisibleMenus() {
   return filtered.slice(0, appState.visibleLimit);
 }
 
-function hasExpandableContent(menu) {
+function renderSearchableMenuValue(name) {
+  if (!isPresent(name)) return escapeHtml(name);
+  return `<button type="button" class="day-search-link" data-search-term="${escapeAttr(name)}">${escapeHtml(name)}</button>`;
+}
+
+function applySearch(term) {
+  appState.searchQuery = String(term || '').trim();
+  appState.visibleLimit = PAGE_SIZE;
+  appState.expandedDates.clear();
+
+  const input = document.getElementById('appSearch');
+  if (input) input.value = appState.searchQuery;
+
+  updateDayList();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
   return OTHER_MENU_KEYS.some(key => isPresent(getMenuName(menu, key))) ||
     isPresent(menu.notes) ||
     isPresent(menu.assignee) ||
@@ -163,7 +178,7 @@ function renderDayDetails(menu) {
       return `
         <div class="day-detail-row">
           <span class="day-detail-label">${escapeHtml(MENU_CATEGORIES[key])}</span>
-          <span class="day-detail-value">${escapeHtml(name)}</span>
+          <span class="day-detail-value">${renderSearchableMenuValue(name)}</span>
         </div>
       `;
     })
@@ -210,7 +225,7 @@ function renderDayRow(menu) {
         ${expandable ? '' : 'disabled'}
       >
         <span class="day-row-date">${escapeHtml(formatShortDate(menu.menuDate))}</span>
-        <span class="day-row-daily">日替わり：${escapeHtml(dailyText)}</span>
+        <span class="day-row-daily">日替わり：${isPresent(dailyName) ? renderSearchableMenuValue(dailyName) : escapeHtml(dailyText)}</span>
         ${expandable ? `<span class="day-row-toggle" aria-hidden="true">${expanded ? '△' : '▽'}</span>` : ''}
       </button>
       ${expanded && expandable ? renderDayDetails(menu) : ''}
@@ -263,6 +278,14 @@ function bindControls() {
   });
 
   contentArea.addEventListener('click', e => {
+    const searchLink = e.target.closest('[data-search-term]');
+    if (searchLink) {
+      e.preventDefault();
+      e.stopPropagation();
+      applySearch(searchLink.dataset.searchTerm);
+      return;
+    }
+
     const toggleBtn = e.target.closest('[data-toggle-day]');
     if (toggleBtn && !toggleBtn.disabled) {
       const date = toggleBtn.dataset.toggleDay;

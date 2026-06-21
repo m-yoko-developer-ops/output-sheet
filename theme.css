@@ -489,6 +489,30 @@ a:hover {
   word-break: break-word;
 }
 
+.day-search-link {
+  display: inline;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: rgba(37, 99, 235, 0.35);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.day-search-link:hover {
+  color: var(--accent-hover);
+  text-decoration-color: currentColor;
+}
+
+.day-row-daily .day-search-link {
+  font-weight: inherit;
+}
+
 .day-detail-notes {
   margin-top: 0.5rem;
   padding: 0.55rem 0.65rem;

@@ -355,13 +355,15 @@ function renderShell() {
 
       <header class="app-header">
         ${renderAppTitlebar()}
-        <div class="home-search-row">
-          <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-          </svg>
-          <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." aria-label="検索" autocomplete="off">
+        <div class="app-toolbar">
+          <div class="home-search-row">
+            <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." aria-label="検索" autocomplete="off">
+          </div>
+          ${formButton}
         </div>
-        ${formButton}
       </header>
 
       <div id="dayListMount"></div>

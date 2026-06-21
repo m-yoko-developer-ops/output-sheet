@@ -79,7 +79,11 @@ a:hover {
 
 .app-header {
   text-align: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.app-header .app-titlebar {
+  text-align: left;
 }
 
 .notice-banner--inline {
@@ -125,15 +129,10 @@ a:hover {
   color: var(--text-primary);
 }
 
-.portal-loading-icon {
-  width: 72px;
-  height: 72px;
-  font-size: 2.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  background: var(--accent-dim);
+.portal-loading-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
 }
 
 .error-panel {
@@ -161,7 +160,6 @@ a:hover {
 }
 
 .site-brand-icon,
-.portal-loading-icon,
 .footer-icon {
   display: inline-flex;
   align-items: center;
@@ -172,12 +170,6 @@ a:hover {
   border-radius: var(--radius-md);
   background: var(--accent-dim);
   flex-shrink: 0;
-}
-
-.portal-loading-icon {
-  width: 96px;
-  height: 96px;
-  font-size: 3rem;
 }
 
 .footer-icon {
@@ -293,6 +285,36 @@ a:hover {
   border-radius: var(--radius-md);
   background: var(--bg-card);
   margin-bottom: 1rem;
+}
+
+/* フォームと同じ：左にタイトル、右にロゴ */
+.app-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 1.1rem;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.85rem;
+}
+
+.app-titlebar-text {
+  margin: 0;
+  font-size: clamp(1.2rem, 4.8vw, 1.6rem);
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.app-titlebar-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .home-banner {

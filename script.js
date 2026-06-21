@@ -15,6 +15,7 @@ const contentArea = document.getElementById('contentArea');
 
 const SITE_NAME = '出数表入力';
 const SITE_BANNER = '食堂出数入力';
+const LOGO_PATH = 'images/seki-logo.png';
 const PAGE_SIZE = 10;
 
 const MENU_CATEGORIES = {
@@ -151,6 +152,15 @@ function hasExpandableContent(menu) {
     isPresent(menu.notes) ||
     isPresent(menu.assignee) ||
     (menu.images?.length > 0);
+}
+
+function renderAppTitlebar() {
+  return `
+    <div class="app-titlebar">
+      <h1 class="app-titlebar-text">${escapeHtml(SITE_BANNER)}</h1>
+      <img src="${LOGO_PATH}" alt="" class="app-titlebar-logo" width="56" height="56" decoding="async">
+    </div>
+  `;
 }
 
 function renderNoticeBanner() {
@@ -323,7 +333,7 @@ function bindControls() {
 function renderLoadingScreen() {
   contentArea.innerHTML = `
     <div class="portal-loading" role="status" aria-live="polite">
-      <span class="portal-loading-icon" aria-hidden="true">📋</span>
+      <img src="${LOGO_PATH}" alt="" class="portal-loading-logo" width="64" height="64" decoding="async">
       <p class="portal-loading-brand">${SITE_NAME}</p>
       <p class="portal-loading-message">データを読み込んでいます…</p>
       <div class="portal-loading-bar" aria-hidden="true"><span></span></div>
@@ -344,10 +354,7 @@ function renderShell() {
       ${renderNoticeBanner()}
 
       <header class="app-header">
-        <div class="home-banner">
-          <h1 class="home-banner-title">${escapeHtml(SITE_BANNER)}</h1>
-          <img src="images/shokudo-logo.svg" alt="" class="home-banner-logo" width="48" height="48" decoding="async">
-        </div>
+        ${renderAppTitlebar()}
         <div class="home-search-row">
           <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>

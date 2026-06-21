@@ -31,6 +31,7 @@ const indexes = {
 };
 
 let route = { section: 'orders', id: null };
+let loadMeta = { orderSource: '', notices: [] };
 
 const contentArea = document.getElementById('contentArea');
 const globalSearch = document.getElementById('globalSearch');
@@ -40,10 +41,28 @@ const overlay = document.getElementById('overlay');
 const menuToggle = document.getElementById('menuToggle');
 const sidebarClose = document.getElementById('sidebarClose');
 
-const SITE_NAME = '出数管理表';
+const SITE_NAME = '出数表入力';
+const SITE_BANNER = '食堂出数入力';
+
+const MENU_CATEGORIES = {
+  daily: '日替わりメニュー',
+  health: '健康',
+  recommend: 'おすすめ',
+  noodle: '麺ランチ',
+  budget: 'おてごろ'
+};
+
+const OTHER_MENU_KEYS = ['health', 'recommend', 'noodle', 'budget'];
+
+let homeState = {
+  selectedDate: '',
+  selectedCategory: 'daily',
+  menuOpen: false,
+  searchQuery: ''
+};
 
 async function loadData() {
-  const { data, indexes: built } = await window.loadOutputData();
+  const { data, indexes: built, meta } = await window.loadOutputData();
   store.orders = data.orders;
   store.clients = data.clients;
   store.products = data.products;
@@ -53,6 +72,8 @@ async function loadData() {
   indexes.productById = built.productById;
   indexes.ordersByClientId = built.ordersByClientId;
   indexes.ordersByProductId = built.ordersByProductId;
+
+  loadMeta = meta || { orderSource: '', notices: [] };
 }
 
 function resolveClient(id) {
@@ -91,6 +112,7 @@ function onHashChange() {
   route = parseHash();
   updateNavActive();
   render();
+  renderNoticeBanner();
   scrollDetailToTop();
 }
 
@@ -107,7 +129,7 @@ function scrollDetailToTop() {
 
 function updateDocumentTitle() {
   const entity = getActiveEntity();
-  document.title = entity ? `${entity.name || entity.title} — 出数管理表` : SITE_NAME;
+  document.title = entity ? `${entity.name || entity.title} — ${SITE_NAME}` : SITE_NAME;
 }
 
 function getActiveEntity() {
@@ -124,7 +146,7 @@ function renderLoadingScreen() {
   contentArea.innerHTML = `
     <div class="portal-loading" role="status" aria-live="polite">
       <span class="portal-loading-icon" aria-hidden="true">📋</span>
-      <p class="portal-loading-brand">出数管理表</p>
+      <p class="portal-loading-brand">${SITE_NAME}</p>
       <p class="portal-loading-message">データを読み込んでいます…</p>
       <div class="portal-loading-bar" aria-hidden="true"><span></span></div>
     </div>
@@ -282,140 +304,161 @@ function sumQuantity(orders) {
   return orders.reduce((sum, order) => sum + (order.quantity || 0), 0);
 }
 
-function countByStatus(orders) {
-  const counts = { pending: 0, in_progress: 0, done: 0, cancelled: 0 };
-  orders.forEach(order => {
-    if (counts[order.status] != null) counts[order.status] += 1;
-  });
-  return counts;
+function toDateInputValue(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
-function renderPortalStatCard({ section, icon, label, count, sub }) {
-  return `
-    <a href="#${section}" class="stat-card" data-nav-section="${section}">
-      <span class="stat-card-icon" aria-hidden="true">${icon}</span>
-      <span class="stat-card-label">${escapeHtml(label)}</span>
-      <span class="stat-card-divider" aria-hidden="true"></span>
-      <span class="stat-card-value">${count}</span>
-      <span class="stat-card-sub">${escapeHtml(sub)}</span>
-    </a>
-  `;
+function initHomeState() {
+  if (!homeState.selectedDate) {
+    homeState.selectedDate = toDateInputValue(new Date());
+  }
+}
+
+function getHomeOrders() {
+  initHomeState();
+  const query = homeState.searchQuery.toLowerCase().trim();
+  return store.orders.filter(order => {
+    const dateMatch = order.menuDate === homeState.selectedDate;
+    const catMatch = order.category === homeState.selectedCategory;
+    const searchMatch = !query || order.title.toLowerCase().includes(query);
+    return dateMatch && catMatch && searchMatch;
+  });
+}
+
+function renderHomeMenuListItems(orders) {
+  if (!orders.length) {
+    return `<li class="home-menu-empty">${renderEmpty('この日のメニューはありません')}</li>`;
+  }
+  return orders.map(order => `
+    <li class="home-menu-item" data-nav-section="orders" data-nav-id="${order.id}">
+      <span class="home-menu-item-name">${escapeHtml(order.title)}</span>
+      <span class="home-menu-item-qty">${formatQuantity(order.quantity, order.unit)}</span>
+    </li>
+  `).join('');
+}
+
+function renderHomeMenuListHtml() {
+  return renderHomeMenuListItems(getHomeOrders());
+}
+
+function renderHomeSummaryText() {
+  const orders = getHomeOrders();
+  const label = MENU_CATEGORIES[homeState.selectedCategory] || '日替わりメニュー';
+  if (!orders.length) return `${label} — 0 件`;
+  return `${label} — ${orders.length} 件 / 合計 ${sumQuantity(orders).toLocaleString('ja-JP')} 食`;
+}
+
+function bindHomeControls() {
+  const dateInput = document.getElementById('homeDate');
+  const menuToggle = document.getElementById('homeMenuToggle');
+  const searchInput = document.getElementById('homeSearch');
+  const dailyReset = document.getElementById('homeDailyReset');
+
+  dateInput?.addEventListener('change', e => {
+    homeState.selectedDate = e.target.value;
+    renderHomeView();
+  });
+
+  menuToggle?.addEventListener('click', () => {
+    homeState.menuOpen = !homeState.menuOpen;
+    renderHomeView();
+  });
+
+  dailyReset?.addEventListener('click', () => {
+    homeState.selectedCategory = 'daily';
+    homeState.menuOpen = false;
+    renderHomeView();
+  });
+
+  contentArea.querySelectorAll('[data-home-category]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      homeState.selectedCategory = btn.dataset.homeCategory;
+      homeState.menuOpen = false;
+      renderHomeView();
+    });
+  });
+
+  searchInput?.addEventListener('input', e => {
+    homeState.searchQuery = e.target.value;
+    const listEl = document.getElementById('homeMenuList');
+    const summaryEl = document.getElementById('homeMenuSummary');
+    if (listEl) listEl.innerHTML = renderHomeMenuListHtml();
+    if (summaryEl) summaryEl.textContent = renderHomeSummaryText();
+  });
 }
 
 function renderHomeView() {
-  const statusCounts = countByStatus(store.orders);
-  const activeOrders = store.orders.filter(o => o.status !== 'done' && o.status !== 'cancelled');
-  const totalQty = sumQuantity(activeOrders);
+  initHomeState();
+  document.body.classList.add('view-home');
 
-  const stats = [
-    { section: 'orders', icon: '📦', label: '案件', count: store.orders.length, sub: '登録件数' },
-    { section: 'clients', icon: '🏢', label: '取引先', count: store.clients.length, sub: '社' },
-    { section: 'products', icon: '🏷️', label: '品目', count: store.products.length, sub: '種類' },
-    {
-      section: 'orders',
-      icon: '📊',
-      label: '進行中出数',
-      count: totalQty.toLocaleString('ja-JP'),
-      sub: '未完了合計'
-    }
-  ];
+  const formUrl = (window.AppLinks || {}).orderForm || '#';
+  const formReady = formUrl && formUrl !== '#';
+  const categoryLabel = MENU_CATEGORIES[homeState.selectedCategory] || '日替わりメニュー';
+  const orders = getHomeOrders();
 
-  const recentOrders = [...store.orders]
-    .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))
-    .slice(0, 8);
+  const formButton = formReady
+    ? `<a href="${escapeAttr(formUrl)}" class="home-input-btn" target="_blank" rel="noopener noreferrer">入力</a>`
+    : `<span class="home-input-btn home-input-btn--disabled" title="js/links.js にフォームURLを設定してください">入力</span>`;
 
   contentArea.innerHTML = `
-    <div class="portal-page">
-      <section class="portal-hero">
-        <span class="portal-hero-mascot portal-loading-icon" aria-hidden="true">📋</span>
-        <div class="portal-hero-body">
-          <p class="portal-hero-kicker">PRODUCTION PORTAL</p>
-          <h1 class="portal-hero-title">出数管理表</h1>
-          <p class="portal-hero-lead">案件の出数・納期・ステータスをひとつの画面で確認できます。</p>
+    <div class="home-page">
+      <header class="home-header">
+        <div class="home-banner">
+          <h1 class="home-banner-title">${escapeHtml(SITE_BANNER)}</h1>
+          <img src="images/shokudo-logo.svg" alt="" class="home-banner-logo" width="56" height="56" decoding="async">
         </div>
-      </section>
-
-      <section class="portal-section">
-        <h2 class="portal-section-label">サマリー</h2>
-        <div class="portal-stats">
-          ${stats.map(renderPortalStatCard).join('')}
+        <p class="home-subtitle">${escapeHtml(SITE_NAME)}</p>
+        <div class="home-search-row">
+          <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="search" id="homeSearch" class="home-search-input" placeholder="メニューを検索..." value="${escapeAttr(homeState.searchQuery)}" aria-label="メニュー検索">
         </div>
-        <dl class="order-summary-grid">
-          <div class="order-summary-item">
-            <dt>未着手</dt>
-            <dd>${statusCounts.pending}</dd>
-          </div>
-          <div class="order-summary-item">
-            <dt>製作中</dt>
-            <dd>${statusCounts.in_progress}</dd>
-          </div>
-          <div class="order-summary-item">
-            <dt>完了</dt>
-            <dd>${statusCounts.done}</dd>
-          </div>
-          <div class="order-summary-item">
-            <dt>キャンセル</dt>
-            <dd>${statusCounts.cancelled}</dd>
-          </div>
-        </dl>
-      </section>
+        ${formButton}
+      </header>
 
-      <section class="portal-section">
-        <h2 class="portal-section-label">納期が近い案件</h2>
-        <div class="order-table-wrap">
-          <table class="order-table">
-            <thead>
-              <tr>
-                <th>管理番号</th>
-                <th>案件名</th>
-                <th>取引先</th>
-                <th class="col-qty">出数</th>
-                <th>納期</th>
-                <th>状態</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${recentOrders.map(order => {
-                const client = resolveClient(order.clientId);
-                return `
-                  <tr data-nav-section="orders" data-nav-id="${order.id}">
-                    <td>${escapeHtml(order.orderNo || '—')}</td>
-                    <td>${escapeHtml(order.title)}</td>
-                    <td>${escapeHtml(client?.name || '—')}</td>
-                    <td class="col-qty">${formatQuantity(order.quantity, order.unit)}</td>
-                    <td class="${dueDateClass(order.dueDate, order.status)}">${formatDueDate(order.dueDate)}</td>
-                    <td>${renderStatusBadge(order.status)}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
+      <section class="home-controls">
+        <div class="home-date-row">
+          <label class="home-field-label" for="homeDate">日付</label>
+          <input type="date" id="homeDate" class="home-date-input" value="${escapeAttr(homeState.selectedDate)}">
         </div>
-      </section>
 
-      <section class="portal-section">
-        <h2 class="portal-section-label">探索する</h2>
-        <div class="portal-explore">
-          <a href="#orders" class="portal-explore-card" data-nav-section="orders">
-            <span class="portal-explore-icon">📦</span>
-            <span class="portal-explore-name">案件</span>
-            <span class="portal-explore-desc">出数・納期・仕様の一覧</span>
-          </a>
-          <a href="#clients" class="portal-explore-card" data-nav-section="clients">
-            <span class="portal-explore-icon">🏢</span>
-            <span class="portal-explore-name">取引先</span>
-            <span class="portal-explore-desc">クライアントと関連案件</span>
-          </a>
-          <a href="#products" class="portal-explore-card" data-nav-section="products">
-            <span class="portal-explore-icon">🏷️</span>
-            <span class="portal-explore-name">品目</span>
-            <span class="portal-explore-desc">品目マスタと出数合計</span>
-          </a>
+        <div class="home-menu-row">
+          <span class="home-field-label">メニュー</span>
+          <button type="button" id="homeMenuToggle" class="home-menu-toggle" aria-expanded="${homeState.menuOpen}">
+            <span class="home-menu-toggle-label">${escapeHtml(categoryLabel)}</span>
+            <span class="home-menu-caret" aria-hidden="true">▼</span>
+          </button>
+          ${homeState.selectedCategory !== 'daily' ? `
+            <button type="button" id="homeDailyReset" class="home-daily-reset">日替わりに戻す</button>
+          ` : ''}
+        </div>
+
+        ${homeState.menuOpen ? `
+          <div class="home-category-list" role="list">
+            ${OTHER_MENU_KEYS.map(key => `
+              <button type="button" class="home-category-btn ${homeState.selectedCategory === key ? 'is-active' : ''}" data-home-category="${key}">
+                ${escapeHtml(MENU_CATEGORIES[key])}
+              </button>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        <div class="home-menu-panel">
+          <p id="homeMenuSummary" class="home-menu-summary">${escapeHtml(renderHomeSummaryText())}</p>
+          <ul id="homeMenuList" class="home-menu-list">
+            ${renderHomeMenuListItems(orders)}
+          </ul>
         </div>
       </section>
     </div>
   `;
 
+  bindHomeControls();
   bindNavigation();
 }
 
@@ -730,6 +773,8 @@ function renderGlobalSearchResults() {
 }
 
 function render() {
+  document.body.classList.toggle('view-home', route.section === 'home' && !getSearchQuery());
+
   if (getSearchQuery()) {
     renderGlobalSearchResults();
     return;
@@ -761,7 +806,35 @@ function renderFatalError(err) {
       <p class="error-message">出数データを表示できません。HTTP サーバー経由で開いているか確認してください。</p>
     </div>
   `;
-  console.error('[出数管理表]', err);
+  console.error('[出数表入力]', err);
+}
+
+function renderNoticeBanner() {
+  const existing = document.getElementById('noticeBanner');
+  if (existing) existing.remove();
+  if (!loadMeta.notices?.length) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'noticeBanner';
+  banner.className = 'notice-banner';
+
+  banner.innerHTML = loadMeta.notices.map(notice => {
+    const isFallback = loadMeta.orderSource === 'json-fallback';
+    const title = notice.title || (isFallback ? '最新データを読み込めませんでした' : 'お知らせ');
+    const message = notice.message || '';
+    const fallback = notice.fallback ? `<p class="notice-fallback">${escapeHtml(notice.fallback)}</p>` : '';
+
+    return `
+      <div class="notice-item notice-warning">
+        <p class="notice-title">${escapeHtml(title)}</p>
+        <p class="notice-message">${escapeHtml(message)}</p>
+        ${fallback}
+      </div>
+    `;
+  }).join('');
+
+  const header = document.querySelector('.header');
+  if (header) header.insertAdjacentElement('afterend', banner);
 }
 
 function openSidebar() {
@@ -792,6 +865,7 @@ globalSearch.addEventListener('keydown', e => {
 navMenu.querySelectorAll('.nav-link').forEach(link => {
   link.addEventListener('click', () => {
     globalSearch.value = '';
+    homeState.searchQuery = '';
     closeSidebar();
   });
 });
@@ -803,6 +877,7 @@ async function init() {
   try {
     await loadData();
     route = parseHash();
+    renderNoticeBanner();
     if (!route.id && route.section === 'orders' && store.orders.length > 0) {
       location.replace(`#orders/${store.orders[0].id}`);
       return;

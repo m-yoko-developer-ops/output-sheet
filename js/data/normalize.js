@@ -2,6 +2,20 @@
  * JSON をサイト共通モデルへ正規化
  */
 window.OutputNormalize = (function () {
+  const CATEGORY_MAP = {
+    '日替わり': 'daily',
+    '日替わりメニュー': 'daily',
+    daily: 'daily',
+    '健康': 'health',
+    health: 'health',
+    'おすすめ': 'recommend',
+    recommend: 'recommend',
+    '麺ランチ': 'noodle',
+    noodle: 'noodle',
+    'おてごろ': 'budget',
+    budget: 'budget'
+  };
+
   const STATUS_MAP = {
     '未着手': 'pending',
     '製作中': 'in_progress',
@@ -25,14 +39,16 @@ window.OutputNormalize = (function () {
       id: String(item.id || ''),
       orderNo: String(item.orderNo || item.order_no || ''),
       title: String(item.title || item.name || '無題'),
+      category: CATEGORY_MAP[item.category] || 'daily',
+      menuDate: String(item.menuDate || item.menu_date || item.dueDate || item.due_date || ''),
       clientId: String(item.clientId || item.client_id || ''),
       productId: String(item.productId || item.product_id || ''),
       productName: String(item.productName || item.product_name || item.product || ''),
       quantity: toNumber(item.quantity ?? item.qty),
-      unit: String(item.unit || '部'),
+      unit: String(item.unit || '食'),
       dueDate: String(item.dueDate || item.due_date || ''),
       status: STATUS_MAP[item.status] || 'pending',
-      assignee: String(item.assignee || item.staff || ''),
+      assignee: String(item.assignee || item.staff || item.input_by || ''),
       spec: String(item.spec || item.specification || ''),
       notes: String(item.notes || item.memo || '')
     };

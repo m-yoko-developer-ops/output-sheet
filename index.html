@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>出数管理表</title>
+  <title>出数表入力</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="theme.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,8 +17,8 @@
         <a href="#home" class="site-brand site-brand--sidebar">
           <span class="site-brand-icon" aria-hidden="true">📋</span>
           <span class="site-brand-text">
-            <span class="site-brand-name">出数管理表</span>
-            <span class="site-brand-tagline">Production Portal</span>
+            <span class="site-brand-name">出数表入力</span>
+            <span class="site-brand-tagline">食堂出数入力</span>
           </span>
         </a>
       </div>
@@ -31,7 +31,7 @@
       </div>
       <ul class="nav-menu" id="navMenu">
         <li><a href="#home" class="nav-link" data-section="home"><span class="nav-icon">🏠</span>ホーム</a></li>
-        <li><a href="#orders" class="nav-link" data-section="orders"><span class="nav-icon">📦</span>案件</a></li>
+        <li><a href="#orders" class="nav-link" data-section="orders"><span class="nav-icon">📦</span>出数一覧</a></li>
         <li><a href="#clients" class="nav-link" data-section="clients"><span class="nav-icon">🏢</span>取引先</a></li>
         <li><a href="#products" class="nav-link" data-section="products"><span class="nav-icon">🏷️</span>品目</a></li>
       </ul>
@@ -56,7 +56,7 @@
       <main class="content-area" id="contentArea">
         <div class="portal-loading" role="status" aria-live="polite">
           <span class="portal-loading-icon" aria-hidden="true">📋</span>
-          <p class="portal-loading-brand">出数管理表</p>
+          <p class="portal-loading-brand">出数表入力</p>
           <p class="portal-loading-message" id="loadingMessage">データを読み込んでいます…</p>
           <div class="portal-loading-bar" aria-hidden="true"><span></span></div>
         </div>
@@ -66,8 +66,8 @@
         <div class="footer-brand">
           <span class="footer-icon" aria-hidden="true">📋</span>
           <div class="footer-brand-text">
-            <span class="footer-name">出数管理表</span>
-            <span class="footer-tagline">Production Portal</span>
+            <span class="footer-name">出数表入力</span>
+            <span class="footer-tagline">食堂出数入力</span>
           </div>
         </div>
         <p class="footer-copy">© 2026</p>
@@ -77,9 +77,11 @@
 
   <div class="overlay" id="overlay"></div>
   <script src="js/config.js"></script>
+  <script src="js/links.js"></script>
   <script src="js/data/errors.js"></script>
   <script src="js/data/normalize.js"></script>
   <script src="js/data/json-provider.js"></script>
+  <script src="js/data/apps-script-provider.js"></script>
   <script src="js/data/provider.js"></script>
   <script src="script.js"></script>
 </body>

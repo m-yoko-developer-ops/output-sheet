@@ -325,7 +325,7 @@ function renderAppFooter() {
   const formUrl = (window.AppLinks || {}).orderForm || '#';
   const formReady = formUrl && formUrl !== '#';
   const formLink = formReady
-    ? `<a href="${escapeAttr(formUrl)}" class="app-footer-link" target="_blank" rel="noopener noreferrer">Googleフォームで入力</a>`
+    ? `<a href="${escapeAttr(formUrl)}" class="app-footer-link" target="_blank" rel="noopener noreferrer">入力フォーム</a>`
     : '';
 
   return `
@@ -335,13 +335,13 @@ function renderAppFooter() {
           <img src="${LOGO_PATH}" alt="" class="app-footer-logo" width="48" height="48" decoding="async">
           <div>
             <p class="app-footer-title">${escapeHtml(SITE_BANNER)}</p>
-            <p class="app-footer-tagline">メニュー確認・検索・入力のポータル</p>
+            <p class="app-footer-tagline">食堂メニューの確認・検索</p>
           </div>
         </div>
         <div class="app-footer-stats" id="appFooterStats"></div>
         <div class="app-footer-actions">
           ${formLink}
-          <span class="app-footer-hint">各行の ▽ から詳細・画像・編集へ</span>
+          <span class="app-footer-hint">行を展開すると詳細・画像・編集URLを表示</span>
         </div>
       </div>
       <p class="app-footer-copy">${escapeHtml(SITE_NAME)}</p>

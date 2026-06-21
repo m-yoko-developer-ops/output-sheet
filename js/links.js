@@ -21,10 +21,9 @@
     orderForm: 'https://forms.gle/EFGetgC9g185UaYN7',
     manualUrl: appRoot + 'manual.html',
 
-    /** 閲覧ゲート（API 未接続時のフォールバック PIN） */
-    accessPin: '1234',
+    /** 閲覧ゲート（固定4桁 PIN。先頭の0も可。変更はここを編集して push） */
+    accessPin: '3000',
     accessGate: true,
-    /** true: タブを閉じるまで再入力不要 / false: 毎回入力 */
     accessRememberSession: true,
 
     /** フッター（コピーライトバー） */

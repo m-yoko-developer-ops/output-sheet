@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>使い方 — 出数表入力</title>
+  <meta name="theme-color" content="#f97316">
+  <link rel="icon" href="images/icon-192.png" type="image/png">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="app-body">
+  <main class="app-main">
+    <div class="app-shell">
+      <article class="app-page manual-page">
+        <header class="manual-header">
+          <a href="./" class="manual-back-link">← 一覧に戻る</a>
+          <h1 class="manual-title">使い方マニュアル</h1>
+          <p class="manual-lead">食堂出数入力サイトの基本的な操作です。</p>
+        </header>
+
+        <section class="manual-section">
+          <h2 class="manual-section-title">1. メニューを見る</h2>
+          <p>トップページに、日付ごとのメニュー一覧が表示されます。各行の左が<strong>日付</strong>、中央が<strong>日替わりメニュー</strong>です。</p>
+          <p>一覧は新しい日付から順に並びます。最初は10日分が表示され、下の「さらに10日を表示」で追加できます。</p>
+        </section>
+
+        <section class="manual-section">
+          <h2 class="manual-section-title">2. 詳細を開く（▽）</h2>
+          <p>行の右端の <strong>▽</strong> をタップ（クリック）すると、その日の詳細が開きます。</p>
+          <ul class="manual-list">
+            <li>健康ランチ・おすすめ・麵ランチ・お手頃350</li>
+            <li>備考・入力者</li>
+            <li>画像リンク（あれば）</li>
+            <li>編集リンク（あれば・新規入力分のみ）</li>
+          </ul>
+          <p>もう一度タップすると <strong>△</strong> になり、詳細が閉じます。</p>
+        </section>
+
+        <section class="manual-section">
+          <h2 class="manual-section-title">3. 検索する</h2>
+          <p>上部の検索欄に、日付・メニュー名・入力者・備考の一部を入力すると、該当する日だけに絞り込めます。</p>
+          <p>メニュー名をタップしても、その名前で検索できます。右の <strong>×</strong> で検索をクリアします。</p>
+        </section>
+
+        <section class="manual-section">
+          <h2 class="manual-section-title">4. 新しいメニューを入力する</h2>
+          <p>上部の <strong>入力</strong> ボタンから、Google フォームが開きます。フォームの指示に従って送信してください。</p>
+          <p>送信後、一覧に反映されるまで少し時間がかかる場合があります。ページを再読み込みして確認してください。</p>
+          <p class="manual-note">同日付を再度送信した場合、<strong>最後に送った内容</strong>が一覧に表示されます。</p>
+        </section>
+
+        <section class="manual-section">
+          <h2 class="manual-section-title">5. 内容を直す（編集）</h2>
+          <p>詳細を開き、<strong>編集</strong> リンクがある場合は、フォームの回答編集画面が開きます。</p>
+          <p class="manual-note">編集リンクは、編集機能を有効にしたうえで<strong>新しく送信した分</strong>に付きます。過去の一括取込データには表示されないことがあります。</p>
+        </section>
+
+        <section class="manual-section">
+          <h2 class="manual-section-title">6. スマホのホーム画面に追加</h2>
+          <p>ブラウザのメニューから「ホーム画面に追加」を選ぶと、アプリのように素早く開けます。</p>
+        </section>
+
+        <section class="manual-section manual-section--muted">
+          <h2 class="manual-section-title">お試し版について</h2>
+          <p>現在は<strong>お試し版</strong>として提供しています。正式な運用・機能追加は法人契約にて対応可能です（フッター参照）。</p>
+        </section>
+
+        <div class="manual-actions">
+          <a href="./" class="home-manual-btn home-manual-btn--primary">一覧を開く</a>
+          <a id="manualFormLink" class="home-input-btn" href="#" target="_blank" rel="noopener noreferrer">入力フォーム</a>
+        </div>
+      </article>
+
+      <footer class="app-footer">
+        <div class="app-footer-bar">
+          <span class="app-footer-trial">お試し版</span>
+          <span class="app-footer-copyright">© <a href="https://owl-tec.co.jp/" class="app-footer-author" target="_blank" rel="noopener noreferrer">Owl Technology, inc</a> 2026</span>
+        </div>
+      </footer>
+    </div>
+  </main>
+
+  <script src="js/links.js"></script>
+  <script>
+    (function () {
+      var form = (window.AppLinks || {}).orderForm;
+      var link = document.getElementById('manualFormLink');
+      if (link && form && form !== '#') link.href = form;
+      else if (link) link.style.display = 'none';
+    })();
+  </script>
+</body>
+</html>

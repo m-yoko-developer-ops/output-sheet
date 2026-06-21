@@ -391,7 +391,6 @@ function renderAppFooter() {
         <div class="app-footer-stats" id="appFooterStats"></div>
         <div class="app-footer-actions">
           ${formLink}
-          <span class="app-footer-hint">行を展開すると詳細・画像・編集URLを表示</span>
         </div>
       </div>
       ${renderFooterCreditBar()}
@@ -427,10 +426,19 @@ function updateAppFooterStats() {
   `;
 }
 
+function renderListSectionHeader() {
+  return `
+    <div class="app-list-head">
+      <h2 class="app-list-title">メニュー一覧</h2>
+      <p class="app-list-lead">▽ で詳細表示</p>
+    </div>
+  `;
+}
+
 function updateDayList() {
   const mount = document.getElementById('dayListMount');
   if (!mount) return;
-  mount.innerHTML = renderListMeta() + renderDayListBlock();
+  mount.innerHTML = renderListSectionHeader() + renderListMeta() + renderDayListBlock();
   updateAppFooterStats();
 }
 
@@ -507,6 +515,9 @@ function renderShell() {
     ? `<a href="${escapeAttr(formUrl)}" class="home-input-btn" target="_blank" rel="noopener noreferrer">入力</a>`
     : `<span class="home-input-btn home-input-btn--disabled">入力</span>`;
 
+  const manualUrl = (window.AppLinks || {}).manualUrl || 'manual.html';
+  const manualButton = `<a href="${escapeAttr(manualUrl)}" class="home-manual-btn">マニュアル</a>`;
+
   contentArea.innerHTML = `
     <div class="app-shell">
       <div class="app-page">
@@ -526,7 +537,10 @@ function renderShell() {
                 </svg>
               </button>
             </div>
-            ${formButton}
+            <div class="home-toolbar-actions">
+              ${manualButton}
+              ${formButton}
+            </div>
           </div>
         </header>
 

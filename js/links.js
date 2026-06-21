@@ -19,6 +19,7 @@
   window.AppLinks = {
     publicSite: 'https://m-yoko-developer-ops.github.io/output-sheet/',
     orderForm: 'https://forms.gle/EFGetgC9g185UaYN7',
+    manualUrl: appRoot + 'manual.html',
 
     /** フッター（コピーライトバー） */
     credit: {

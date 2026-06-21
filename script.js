@@ -506,7 +506,7 @@ function renderFooterCreditBar() {
     <div class="app-footer-bar">
       <span class="app-footer-trial">${escapeHtml(credit.trialLabel)}</span>
       <div class="app-footer-bar-actions">
-        ${window.AppAccessGate?.renderSettingsButton?.() || ''}
+        ${window.AppAccessGate?.renderFooterButtons?.() || window.AppAccessGate?.renderSettingsButton?.() || ''}
         <span class="app-footer-copyright">© ${companyHtml} ${escapeHtml(String(credit.startYear))}</span>
       </div>
     </div>

@@ -24,6 +24,8 @@
     /** 閲覧ゲート（API 未接続時のフォールバック PIN） */
     accessPin: '1234',
     accessGate: true,
+    /** true: タブを閉じるまで再入力不要 / false: 毎回入力 */
+    accessRememberSession: true,
 
     /** フッター（コピーライトバー） */
     credit: {

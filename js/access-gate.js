@@ -5,7 +5,6 @@
  */
 (function () {
   const STORAGE_KEY = 'output-sheet-access';
-  let remoteEnabled = null;
   let settingsBound = false;
 
   function getLocalConfig() {
@@ -13,6 +12,10 @@
     const pin = String(links.accessPin ?? '').trim();
     const enabled = links.accessGate !== false && /^\d{4}$/.test(pin);
     return { enabled, pin };
+  }
+
+  function shouldRememberSession() {
+    return window.AppLinks?.accessRememberSession !== false;
   }
 
   function getApiBaseUrl() {
@@ -43,7 +46,9 @@
         signal: controller.signal
       });
       if (!res.ok) return null;
-      return await res.json();
+      const data = await res.json();
+      if (data && data.error) return null;
+      return data;
     } catch {
       return null;
     } finally {
@@ -51,30 +56,13 @@
     }
   }
 
-  async function loadRemoteStatus() {
-    const data = await fetchAccessJson({ action: 'status' });
-    if (data && typeof data.enabled === 'boolean') {
-      remoteEnabled = data.enabled;
-      return data;
-    }
-    return null;
-  }
-
-  async function isGateEnabled() {
+  function isGateEnabled() {
     if (window.AppLinks?.accessGate === false) return false;
-    const local = getLocalConfig();
-    if (!getApiBaseUrl()) return local.enabled;
-
-    if (remoteEnabled == null) {
-      const status = await loadRemoteStatus();
-      if (status) return status.enabled;
-    }
-    if (remoteEnabled != null) return remoteEnabled;
-
-    return local.enabled;
+    return getLocalConfig().enabled;
   }
 
   function isUnlocked() {
+    if (!shouldRememberSession()) return false;
     try {
       return sessionStorage.getItem(STORAGE_KEY) === '1';
     } catch {
@@ -83,8 +71,9 @@
   }
 
   function markUnlocked() {
+    if (!shouldRememberSession()) return;
     try {
-      sessionStorage.setItem(STORAGE_KEY, '1';
+      sessionStorage.setItem(STORAGE_KEY, '1');
     } catch {
       /* ignore */
     }
@@ -96,6 +85,11 @@
     } catch {
       /* ignore */
     }
+  }
+
+  function lockAndReload() {
+    clearUnlock();
+    window.location.reload();
   }
 
   async function verifyPin(pin) {
@@ -195,7 +189,7 @@
       if (value.length !== 4) return;
 
       busy = true;
-      submitBtn.disabled = true;
+      if (submitBtn) submitBtn.disabled = true;
 
       try {
         const ok = await verifyPin(value);
@@ -207,7 +201,7 @@
         showError('数字が違います');
       } finally {
         busy = false;
-        submitBtn.disabled = false;
+        if (submitBtn) submitBtn.disabled = false;
       }
     }
 
@@ -226,9 +220,13 @@
     window.setTimeout(() => input?.focus(), 60);
   }
 
-  async function requireAccess(onGranted) {
-    const enabled = await isGateEnabled();
-    if (!enabled || isUnlocked()) {
+  function requireAccess(onGranted) {
+    if (!isGateEnabled()) {
+      onGranted();
+      return;
+    }
+
+    if (isUnlocked()) {
       onGranted();
       return;
     }
@@ -314,6 +312,12 @@
         return;
       }
 
+      if (e.target.closest('#accessLogoutBtn')) {
+        e.preventDefault();
+        lockAndReload();
+        return;
+      }
+
       if (e.target.closest('[data-close-access-settings]')) {
         e.preventDefault();
         closeSettings();
@@ -367,17 +371,27 @@
     });
   }
 
-  function renderSettingsButton() {
-    if (!getApiBaseUrl() || window.AppLinks?.accessGate === false) return '';
-    return `<button type="button" id="accessSettingsBtn" class="app-footer-pin-btn">PIN変更</button>`;
+  function renderFooterButtons() {
+    if (!isGateEnabled()) return '';
+
+    const buttons = [];
+    if (getApiBaseUrl()) {
+      buttons.push('<button type="button" id="accessSettingsBtn" class="app-footer-pin-btn">PIN変更</button>');
+    }
+    if (shouldRememberSession() && isUnlocked()) {
+      buttons.push('<button type="button" id="accessLogoutBtn" class="app-footer-pin-btn">ログアウト</button>');
+    }
+    return buttons.join('');
   }
 
   window.AppAccessGate = {
     requireAccess,
     isUnlocked,
     clearUnlock,
+    lockAndReload,
     isEnabled: isGateEnabled,
     bindSettings: bindSettingsControls,
-    renderSettingsButton
+    renderSettingsButton: renderFooterButtons,
+    renderFooterButtons
   };
 })();

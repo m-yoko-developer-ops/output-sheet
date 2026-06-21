@@ -190,16 +190,17 @@ function hasExpandableContent(menu) {
     isPresent(menu.editUrl);
 }
 
-function renderAppTitlebar() {
+function renderAppHeaderBrand() {
   const manualUrl = (window.AppLinks || {}).manualUrl || 'manual.html';
 
   return `
-    <div class="app-titlebar">
-      <div class="app-titlebar-main">
-        <h1 class="app-titlebar-text">${escapeHtml(SITE_BANNER)}</h1>
-        <a href="${escapeAttr(manualUrl)}" class="app-titlebar-help">使い方</a>
+    <div class="app-header-brand">
+      <img src="${LOGO_PATH}" alt="" class="app-header-logo" width="48" height="48" decoding="async">
+      <div class="app-header-text">
+        <h1 class="app-header-title">${escapeHtml(SITE_BANNER)}</h1>
+        <p class="app-header-tagline">日付ごとのメニュー一覧</p>
       </div>
-      <img src="${LOGO_PATH}" alt="" class="app-titlebar-logo" width="56" height="56" decoding="async">
+      <a href="${escapeAttr(manualUrl)}" class="app-header-help">使い方</a>
     </div>
   `;
 }
@@ -497,8 +498,8 @@ function renderShell() {
         ${renderNoticeBanner()}
 
         <header class="app-header">
-          ${renderAppTitlebar()}
-          <div class="app-toolbar">
+          ${renderAppHeaderBrand()}
+          <div class="app-header-tools">
             <div class="home-search-row">
               <svg class="home-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>

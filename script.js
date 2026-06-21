@@ -476,10 +476,17 @@ function bindControls() {
 function renderLoadingScreen() {
   contentArea.innerHTML = `
     <div class="portal-loading" role="status" aria-live="polite">
-      <img src="${LOGO_PATH}" alt="" class="portal-loading-logo" width="64" height="64" decoding="async">
-      <p class="portal-loading-brand">${SITE_NAME}</p>
-      <p class="portal-loading-message">データを読み込んでいます…</p>
-      <div class="portal-loading-bar" aria-hidden="true"><span></span></div>
+      <div class="portal-loading-card">
+        <div class="portal-loading-logo-wrap">
+          <div class="portal-loading-ring" aria-hidden="true"></div>
+          <img src="${LOGO_PATH}" alt="" class="portal-loading-logo" width="56" height="56" decoding="async">
+        </div>
+        <p class="portal-loading-brand">${SITE_NAME}</p>
+        <p class="portal-loading-message">データを読み込んでいます…</p>
+        <div class="portal-loading-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
     </div>
   `;
 }

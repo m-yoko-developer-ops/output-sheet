@@ -144,7 +144,32 @@ function applySearch(term) {
   if (input) input.value = appState.searchQuery;
 
   updateDayList();
+  updateSearchClearButton();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateSearchClearButton() {
+  const btn = document.getElementById('appSearchClear');
+  const input = document.getElementById('appSearch');
+  if (!btn || !input) return;
+
+  const hasValue = Boolean(input.value);
+  btn.hidden = !hasValue;
+}
+
+function clearSearch() {
+  const input = document.getElementById('appSearch');
+  appState.searchQuery = '';
+  appState.visibleLimit = PAGE_SIZE;
+  appState.expandedDates.clear();
+
+  if (input) {
+    input.value = '';
+    input.focus();
+  }
+
+  updateDayList();
+  updateSearchClearButton();
 }
 
 function hasExpandableContent(menu) {
@@ -393,9 +418,16 @@ function bindControls() {
     appState.searchQuery = e.target.value;
     appState.visibleLimit = PAGE_SIZE;
     updateDayList();
+    updateSearchClearButton();
   });
 
   contentArea.addEventListener('click', e => {
+    if (e.target.closest('#appSearchClear')) {
+      e.preventDefault();
+      clearSearch();
+      return;
+    }
+
     const searchLink = e.target.closest('[data-search-term]');
     if (searchLink) {
       e.preventDefault();
@@ -463,6 +495,11 @@ function renderShell() {
                 <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
               </svg>
               <input type="search" id="appSearch" class="home-search-input" placeholder="日付・メニューを検索..." aria-label="検索" autocomplete="off">
+              <button type="button" id="appSearchClear" class="home-search-clear" aria-label="検索をクリア" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
             </div>
             ${formButton}
           </div>

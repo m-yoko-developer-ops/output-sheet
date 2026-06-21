@@ -1,0 +1,25 @@
+{
+  "products": [
+    {
+      "id": "prod-scenario-book",
+      "name": "シナリオブック",
+      "category": "書籍",
+      "defaultUnit": "部",
+      "notes": "B5 / モノクロ"
+    },
+    {
+      "id": "prod-acrylic-stand",
+      "name": "アクリルスタンド",
+      "category": "グッズ",
+      "defaultUnit": "個",
+      "notes": "150mm / 2mm厚"
+    },
+    {
+      "id": "prod-clear-file",
+      "name": "クリアファイル",
+      "category": "グッズ",
+      "defaultUnit": "枚",
+      "notes": "A4 / 両面印刷"
+    }
+  ]
+}

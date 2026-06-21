@@ -1,0 +1,64 @@
+{
+  "orders": [
+    {
+      "id": "ord-2026-001",
+      "orderNo": "2026-001",
+      "title": "春イベント用シナリオブック",
+      "clientId": "client-yokofolia",
+      "productId": "prod-scenario-book",
+      "productName": "シナリオブック「迷宮の地図」",
+      "quantity": 300,
+      "unit": "部",
+      "dueDate": "2026-04-15",
+      "status": "in_progress",
+      "assignee": "田中",
+      "spec": "B5 / 64p / モノクロ / 並製",
+      "notes": "表紙のみカラー"
+    },
+    {
+      "id": "ord-2026-002",
+      "orderNo": "2026-002",
+      "title": "書店A 再版",
+      "clientId": "client-bookstore-a",
+      "productId": "prod-scenario-book",
+      "productName": "シナリオブック「黒き潮騒」",
+      "quantity": 150,
+      "unit": "部",
+      "dueDate": "2026-05-01",
+      "status": "pending",
+      "assignee": "佐藤",
+      "spec": "B5 / 48p / モノクロ",
+      "notes": ""
+    },
+    {
+      "id": "ord-2026-003",
+      "orderNo": "2026-003",
+      "title": "イベントB アクスタ",
+      "clientId": "client-event-b",
+      "productId": "prod-acrylic-stand",
+      "productName": "アクリルスタンド（猫マスコット）",
+      "quantity": 500,
+      "unit": "個",
+      "dueDate": "2026-06-10",
+      "status": "pending",
+      "assignee": "田中",
+      "spec": "150mm / 台座付き",
+      "notes": "個包装希望"
+    },
+    {
+      "id": "ord-2026-004",
+      "orderNo": "2026-004",
+      "title": "即売会クリアファイル",
+      "clientId": "client-yokofolia",
+      "productId": "prod-clear-file",
+      "productName": "クリアファイル A4",
+      "quantity": 1000,
+      "unit": "枚",
+      "dueDate": "2026-03-20",
+      "status": "done",
+      "assignee": "佐藤",
+      "spec": "A4 / 両面 / PP",
+      "notes": "納品済み 3/18"
+    }
+  ]
+}

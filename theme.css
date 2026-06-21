@@ -1,0 +1,138 @@
+/* ========================================
+   出数管理表 — TRPGポータル応用
+   ======================================== */
+
+:root {
+  --accent: #3b82f6;
+  --accent-dim: rgba(59, 130, 246, 0.15);
+  --accent-hover: #60a5fa;
+  --accent-border: rgba(59, 130, 246, 0.4);
+  --bg-active: rgba(59, 130, 246, 0.12);
+
+  --status-pending: #fbbf24;
+  --status-pending-bg: rgba(251, 191, 36, 0.12);
+  --status-progress: #60a5fa;
+  --status-progress-bg: rgba(96, 165, 250, 0.12);
+  --status-done: #34d399;
+  --status-done-bg: rgba(52, 211, 153, 0.12);
+  --status-cancelled: #9ca3af;
+  --status-cancelled-bg: rgba(156, 163, 175, 0.12);
+}
+
+.site-brand-icon,
+.portal-loading-icon,
+.footer-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  border-radius: var(--radius-md);
+  background: var(--accent-dim);
+  flex-shrink: 0;
+}
+
+.portal-loading-icon {
+  width: 96px;
+  height: 96px;
+  font-size: 3rem;
+}
+
+.footer-icon {
+  width: 52px;
+  height: 52px;
+  font-size: 1.75rem;
+}
+
+.status-pending { color: var(--status-pending); background: var(--status-pending-bg); }
+.status-in_progress { color: var(--status-progress); background: var(--status-progress-bg); }
+.status-done { color: var(--status-done); background: var(--status-done-bg); }
+.status-cancelled { color: var(--status-cancelled); background: var(--status-cancelled-bg); }
+
+.quantity-highlight {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent-hover);
+  font-variant-numeric: tabular-nums;
+}
+
+.due-date--overdue {
+  color: var(--status-dead);
+}
+
+.due-date--soon {
+  color: var(--status-missing);
+}
+
+.order-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.order-summary-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+
+.order-summary-item dt {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.order-summary-item dd {
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.order-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.order-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.order-table th,
+.order-table td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.order-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.order-table tr[data-nav-section] {
+  cursor: pointer;
+}
+
+.order-table tr[data-nav-section]:hover td {
+  background: var(--bg-card-hover);
+}
+
+.order-table .col-qty {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.list-item-qty {
+  font-size: 0.8rem;
+  color: var(--accent-hover);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

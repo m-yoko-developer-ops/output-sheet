@@ -1,0 +1,28 @@
+{
+  "clients": [
+    {
+      "id": "client-yokofolia",
+      "name": "YOKOFOLIA",
+      "contact": "猫TRPG事務局",
+      "phone": "",
+      "email": "",
+      "notes": "自社イベント・グッズ"
+    },
+    {
+      "id": "client-bookstore-a",
+      "name": "書店A",
+      "contact": "仕入担当",
+      "phone": "03-0000-0000",
+      "email": "order@example.com",
+      "notes": "毎月第2金曜納品"
+    },
+    {
+      "id": "client-event-b",
+      "name": "イベントB運営",
+      "contact": "グッズ係",
+      "phone": "",
+      "email": "goods@example.com",
+      "notes": "即売会向け"
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出数管理表</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <a href="#home" class="site-brand site-brand--sidebar">
+          <span class="site-brand-icon" aria-hidden="true">📋</span>
+          <span class="site-brand-text">
+            <span class="site-brand-name">出数管理表</span>
+            <span class="site-brand-tagline">Production Portal</span>
+          </span>
+        </a>
+      </div>
+      <div class="sidebar-header">
+        <button class="sidebar-close" id="sidebarClose" aria-label="メニューを閉じる">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="#home" class="nav-link" data-section="home"><span class="nav-icon">🏠</span>ホーム</a></li>
+        <li><a href="#orders" class="nav-link" data-section="orders"><span class="nav-icon">📦</span>案件</a></li>
+        <li><a href="#clients" class="nav-link" data-section="clients"><span class="nav-icon">🏢</span>取引先</a></li>
+        <li><a href="#products" class="nav-link" data-section="products"><span class="nav-icon">🏷️</span>品目</a></li>
+      </ul>
+    </nav>
+
+    <div class="main-wrapper">
+      <header class="header header--compact">
+        <button class="menu-toggle" id="menuToggle" aria-label="メニューを開く">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+        <div class="search-global">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="search" id="globalSearch" placeholder="案件・取引先・品目を検索..." aria-label="全体検索">
+        </div>
+      </header>
+
+      <main class="content-area" id="contentArea">
+        <div class="portal-loading" role="status" aria-live="polite">
+          <span class="portal-loading-icon" aria-hidden="true">📋</span>
+          <p class="portal-loading-brand">出数管理表</p>
+          <p class="portal-loading-message" id="loadingMessage">データを読み込んでいます…</p>
+          <div class="portal-loading-bar" aria-hidden="true"><span></span></div>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <div class="footer-brand">
+          <span class="footer-icon" aria-hidden="true">📋</span>
+          <div class="footer-brand-text">
+            <span class="footer-name">出数管理表</span>
+            <span class="footer-tagline">Production Portal</span>
+          </div>
+        </div>
+        <p class="footer-copy">© 2026</p>
+      </footer>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+  <script src="js/config.js"></script>
+  <script src="js/data/errors.js"></script>
+  <script src="js/data/normalize.js"></script>
+  <script src="js/data/json-provider.js"></script>
+  <script src="js/data/provider.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

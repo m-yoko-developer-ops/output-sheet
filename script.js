@@ -37,6 +37,37 @@ let appState = {
 
 let controlsBound = false;
 
+const LOADING_MIN_MS = 650;
+const LOADING_FADE_MS = 340;
+
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fadeOutLoadingScreen() {
+  if (prefersReducedMotion()) return;
+
+  const loading = contentArea.querySelector('.portal-loading');
+  if (!loading) return;
+
+  loading.classList.add('portal-loading--exit');
+  await sleep(LOADING_FADE_MS);
+}
+
+function revealAppShell() {
+  const shell = contentArea.querySelector('.app-shell');
+  if (!shell || prefersReducedMotion()) return;
+
+  shell.classList.add('app-shell--enter');
+  requestAnimationFrame(() => {
+    shell.classList.add('is-visible');
+  });
+}
+
 async function loadData() {
   const { data, indexes: built, meta } = await window.loadOutputData();
   store.menus = data.menus;
@@ -549,10 +580,19 @@ function renderFatalError(err) {
 
 async function init() {
   renderLoadingScreen();
+  const startedAt = Date.now();
+
   try {
     await loadData();
+
+    const remaining = LOADING_MIN_MS - (Date.now() - startedAt);
+    if (remaining > 0) await sleep(remaining);
+
+    await fadeOutLoadingScreen();
     renderShell();
+    revealAppShell();
   } catch (err) {
+    await fadeOutLoadingScreen();
     renderFatalError(err);
   }
 }

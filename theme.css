@@ -403,6 +403,28 @@ a:hover {
   background: linear-gradient(155deg, rgba(255, 255, 255, 0.97) 0%, rgba(255, 247, 237, 0.94) 55%, rgba(255, 251, 235, 0.92) 100%);
   box-shadow: var(--shadow-card), 0 0 0 6px rgba(249, 115, 22, 0.07);
   overflow: hidden;
+  transition: opacity 0.34s ease, transform 0.34s ease;
+}
+
+.portal-loading--exit {
+  opacity: 0;
+  transform: scale(0.985);
+}
+
+.portal-loading--exit .portal-loading-card {
+  opacity: 0;
+  transform: scale(0.94) translateY(10px);
+}
+
+.app-shell--enter {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.46s ease, transform 0.46s ease;
+}
+
+.app-shell--enter.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .portal-loading-card::before {
@@ -523,6 +545,14 @@ a:hover {
   .portal-loading-message,
   .portal-loading-dots span {
     animation: none;
+  }
+
+  .portal-loading--exit,
+  .portal-loading--exit .portal-loading-card,
+  .app-shell--enter {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 

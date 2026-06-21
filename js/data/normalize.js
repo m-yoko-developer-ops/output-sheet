@@ -48,7 +48,8 @@ window.OutputNormalize = (function () {
       assignee: String(item.assignee || item.input_by || item.入力者 || ''),
       menus,
       notes: String(item.notes || item.memo || item.備考 || ''),
-      images: normalizeImages(item)
+      images: normalizeImages(item),
+      editUrl: String(item.editUrl || item.edit_url || '')
     };
   }
 

@@ -663,8 +663,10 @@ a:hover {
 .day-detail-images {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.4rem;
   margin-top: 0.55rem;
+  width: 100%;
 }
 
 .day-detail-image-link {
@@ -674,6 +676,22 @@ a:hover {
   border: 1px solid var(--accent-border);
   background: var(--accent-dim);
   font-size: 0.78rem;
+}
+
+.day-detail-edit-link {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.day-detail-edit-link:hover {
+  border-color: var(--accent-border);
+  color: var(--accent-hover);
 }
 
 .load-more-btn {

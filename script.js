@@ -151,7 +151,8 @@ function hasExpandableContent(menu) {
   return OTHER_MENU_KEYS.some(key => isPresent(getMenuName(menu, key))) ||
     isPresent(menu.notes) ||
     isPresent(menu.assignee) ||
-    (menu.images?.length > 0);
+    (menu.images?.length > 0) ||
+    isPresent(menu.editUrl);
 }
 
 function renderAppTitlebar() {
@@ -205,10 +206,14 @@ function renderDayDetails(menu) {
     ? `<div class="day-detail-notes"><p>${escapeHtml(menu.notes)}</p></div>`
     : '';
 
-  const imagesHtml = menu.images?.length
-    ? `<div class="day-detail-images">${menu.images.map((url, i) =>
-        `<a href="${escapeAttr(url)}" class="day-detail-image-link" target="_blank" rel="noopener noreferrer">画像 ${i + 1}</a>`
-      ).join('')}</div>`
+  const imageLinks = (menu.images || []).map((url, i) =>
+    `<a href="${escapeAttr(url)}" class="day-detail-image-link" target="_blank" rel="noopener noreferrer">画像 ${i + 1}</a>`
+  ).join('');
+  const editLink = isPresent(menu.editUrl)
+    ? `<a href="${escapeAttr(menu.editUrl)}" class="day-detail-edit-link" target="_blank" rel="noopener noreferrer">編集</a>`
+    : '';
+  const imagesHtml = imageLinks || editLink
+    ? `<div class="day-detail-images">${imageLinks}${editLink}</div>`
     : '';
 
   return `

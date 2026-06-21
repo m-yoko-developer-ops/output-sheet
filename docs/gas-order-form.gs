@@ -11,6 +11,8 @@
  * 3. setupSpreadsheetId を1回実行
  * 4. デプロイ → ウェブアプリ → アクセス: 全員
  * 5. URL を js/config.js の api.baseUrl に設定
+ *
+ * ※フォーム送信時のメニュー表転記は docs/gas-form-submit.gs（フォーム側 GAS）を使う
  */
 
 var MENU_FIELD_RULES_ = [
@@ -24,7 +26,8 @@ var MENU_FIELD_RULES_ = [
   { field: 'notes', patterns: [/^備考$/] },
   { field: 'image1', patterns: [/^[＃#]\s*1$/, /^[＃#]１$/] },
   { field: 'image2', patterns: [/^[＃#]\s*2$/, /^[＃#]２$/] },
-  { field: 'image3', patterns: [/^[＃#]\s*3$/, /^[＃#]３$/] }
+  { field: 'image3', patterns: [/^[＃#]\s*3$/, /^[＃#]３$/] },
+  { field: 'edit_url', patterns: [/^edit[_\s-]?url$/i, /^編集\s*url$/i] }
 ];
 
 function normalizeHeader_(header) {
@@ -114,7 +117,8 @@ function recordToTargetRow_(record, targetHeaders) {
     notes: record.notes,
     image1: record.images[0] || '',
     image2: record.images[1] || '',
-    image3: record.images[2] || ''
+    image3: record.images[2] || '',
+    edit_url: record.edit_url || ''
   };
 
   return targetHeaders.map(function (header) {
@@ -360,7 +364,8 @@ function rowToMenuRecord_(row, headerMap, menuDateOverride) {
     noodle: cellText_(row, headerMap.noodle),
     budget: cellText_(row, headerMap.budget),
     notes: cellText_(row, headerMap.notes),
-    images: images
+    images: images,
+    edit_url: cellText_(row, headerMap.edit_url)
   };
 }
 
@@ -374,14 +379,17 @@ function getPublicMenus_(ss) {
   var headerMap = buildHeaderMap_(headers);
   var tsCol = findTimestampColumn_(headers);
   var values = readSheetData_(sheet).rows;
+  var byDate = {};
 
-  return values
-    .map(function (row) {
-      var resolved = resolveMenuDateFromRow_(row, headerMap, tsCol);
-      if (!resolved.menu_date) return null;
-      return rowToMenuRecord_(row, headerMap, resolved.menu_date);
-    })
-    .filter(function (record) { return record && record.menu_date; })
+  values.forEach(function (row) {
+    var resolved = resolveMenuDateFromRow_(row, headerMap, tsCol);
+    if (!resolved.menu_date) return;
+    var record = rowToMenuRecord_(row, headerMap, resolved.menu_date);
+    if (record) byDate[record.menu_date] = record;
+  });
+
+  return Object.keys(byDate)
+    .map(function (date) { return byDate[date]; })
     .sort(function (a, b) { return b.menu_date.localeCompare(a.menu_date); });
 }
 
